@@ -1,8 +1,9 @@
-#founary_importer.py
+# founary_importer.py
 
 # Impoart foundary PF2e data into a PostgreSQL database
 
 import asyncio
+import pathlib
 import logging
 from dotenv import load_dotenv
 import json
@@ -31,14 +32,14 @@ GUILD = os.getenv('GUILD')
 SERVER_DATA = os.getenv('SERVERDATA')
 DATABASE = os.getenv("DATABASE")
 
-def import_bestiary(file:str):
 
+def import_bestiary(file: str):
     engine = get_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
 
     try:
-        with open(f"Data\\{file}") as f:
+        with open(f"{file}") as f:
             # logging.info(f'{file}')
             data = json.load(f)
             if data['type'] == 'npc':
@@ -55,7 +56,6 @@ def import_bestiary(file:str):
                 fort = data['system']['saves']['fortitude']['value']
                 reflex = data['system']['saves']['reflex']['value']
                 will = data['system']['saves']['will']['value']
-
 
                 # print(f"name {name}, ac {ac}, hp {hp}, init_string {init_string}, fort {fort}, reflex {reflex}, will {will}")
                 # print(f"level {level}, type: {creatureType}, alignment {alignment}")
@@ -101,12 +101,13 @@ def import_bestiary(file:str):
                     session.add(new_entry)
                     try:
                         session.commit()
+                        logging.info(f"{name} written")
                     except IntegrityError as e:
-                        if os.environ['Overwrite']=="True":
+                        if os.environ['Overwrite'] == "True":
                             with Session() as session:
                                 session.execute(update(NPC)
-                                                .where(NPC.name == name)
-                                                .values(
+                                    .where(NPC.name == name)
+                                    .values(
                                     name=name,
                                     level=level,
                                     creatureType=creatureType,
@@ -130,10 +131,6 @@ def import_bestiary(file:str):
         return False
 
 
-
-
-
-
 logging.basicConfig(level=logging.INFO)
 logging.info("Script Started")
 
@@ -143,9 +140,19 @@ logging.info("Script Started")
 for file in os.listdir('Data'):
     # d=os.path.join('Data', file)
     logging.info(file)
-    if os.path.isdir(file):
-        for item in os.listdir(file):
-            import_bestiary(item)
+    # logging.info(os.path.isdir(file))
+    if os.path.splitext(file)[1] == '.db':
+        logging.info(f"Its a directory: {file}")
+        d = f"Data\\{file}"
+        # print(d)
+        # logging.info(d)
+        for item in os.listdir(d):
+            path = os.path.join(d, item)
+            # print(f" whole path: {path}")
+            # logging.info(item)
+            import_bestiary(path)
     else:
         if os.path.splitext(file)[1] == '.json':
             import_bestiary(file)
+
+# Data/pathfinder-bestiary-2.db/adult-brine-dragon-spellcaster.json
