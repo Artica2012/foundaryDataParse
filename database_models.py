@@ -56,4 +56,5 @@ class NPC(Base):
     fort = Column(Integer())
     reflex = Column(Integer())
     will = Column(Integer())
+    dc = Column(Integer())
     macros = Column(String())

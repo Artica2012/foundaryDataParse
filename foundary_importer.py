@@ -115,6 +115,7 @@ def import_bestiary(directory:str):
                                 fort=int(fort),
                                 reflex=int(reflex),
                                 will=int(will),
+                                dc=int(dc),
                                 macros=''.join(macro_list)
                             ))
                             session.commit()
