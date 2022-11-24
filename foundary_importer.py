@@ -153,6 +153,7 @@ for file in os.listdir('Data'):
             import_bestiary(path)
     else:
         if os.path.splitext(file)[1] == '.json':
-            import_bestiary(file)
+            path = os.path.join('Data', file)
+            import_bestiary(path)
 
 # Data/pathfinder-bestiary-2.db/adult-brine-dragon-spellcaster.json
