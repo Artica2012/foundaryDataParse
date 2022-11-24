@@ -143,7 +143,7 @@ for file in os.listdir('Data'):
     # logging.info(os.path.isdir(file))
     if os.path.splitext(file)[1] == '.db':
         logging.info(f"Its a directory: {file}")
-        d = f"Data\\{file}"
+        d = f"Data\{file}"
         # print(d)
         # logging.info(d)
         for item in os.listdir(d):
