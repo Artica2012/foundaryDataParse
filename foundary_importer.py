@@ -1,45 +1,60 @@
 # founary_importer.py
 
-# Impoart foundary PF2e data into a PostgreSQL database
+# Import foundary PF2e data into a PostgreSQL database
 
 import asyncio
-import pathlib
-import logging
-from dotenv import load_dotenv
+import io
 import json
+import logging
 import os
-import aiohttp
+import shutil
+from zipfile import ZipFile
+
+import requests
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from database_models import NPC, Base
+from database_operations import USERNAME, PASSWORD, HOSTNAME, PORT, DATABASE
 from database_operations import get_db_engine
 
-load_dotenv(verbose=True)
-if os.environ['PRODUCTION'] == 'True':
-    USERNAME = os.getenv('Username')
-    PASSWORD = os.getenv('Password')
-    HOSTNAME = os.getenv('Hostname')
-    PORT = os.getenv('PGPort')
-else:
-    USERNAME = os.getenv('BETA_Username')
-    PASSWORD = os.getenv('BETA_Password')
-    HOSTNAME = os.getenv('BETA_Hostname')
-    PORT = os.getenv('BETA_PGPort')
-
-GUILD = os.getenv('GUILD')
-SERVER_DATA = os.getenv('SERVERDATA')
-DATABASE = os.getenv("DATABASE")
+DOWNLOAD_URL = "https://github.com/foundryvtt/pf2e/archive/refs/heads/master.zip"
+error_list = []
 
 
-def import_bestiary(file: str):
-    engine = get_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-
+async def get_data(data_path):
     try:
-        with open(f"{file}") as f:
+        logging.info("Beginning download")
+        zip_data = requests.get(DOWNLOAD_URL)
+        logging.info(zip_data.status_code)
+        z = ZipFile(io.BytesIO(zip_data.content))
+        z.printdir()
+        z.extractall(data_path)
+        logging.info("Data Extracted")
+        return True
+    except Exception as e:
+        logging.warning(e)
+        return False
+
+
+async def delete_data(data_path):
+    logging.warning("Clearing out data")
+    for root, dirs, files in os.walk(data_path):
+        print(root, dirs, files)
+        for f in files:
+            print(root, f)
+            os.unlink(os.path.join(root, f))
+
+        for d in dirs:
+            print(root, d)
+            shutil.rmtree(os.path.join(root, d))
+    logging.warning("Data Cleared")
+
+
+def import_bestiary(file: str, Session):
+    try:
+        with open(f"{file}", encoding='utf8') as f:
             # logging.info(f'{file}')
             data = json.load(f)
             if data['type'] == 'npc':
@@ -102,6 +117,7 @@ def import_bestiary(file: str):
                     try:
                         session.commit()
                         logging.info(f"{name} written")
+                        return 1
                     except IntegrityError as e:
                         if os.environ['Overwrite'] == "True":
                             with Session() as session:
@@ -123,37 +139,77 @@ def import_bestiary(file: str):
                                 ))
                                 session.commit()
                             logging.info(f"{name} overwritten")
+                            return 2
                         else:
                             logging.info(f"Excepted {name}")
+                            return 3
         return True
-    except Exception as e:
-        logging.warning(e)
-        return False
+    except Exception:
+        # logging.warning(e)
+        error_list.append(file)
+        return 4
 
 
-logging.basicConfig(level=logging.INFO)
-logging.info("Script Started")
+async def main():
+    logging.basicConfig(level=logging.WARNING)
+    logging.info("Script Started")
+    path = os.getcwd() + '/Data/'
+    data_path = f"{path}/pf2e-master/packs/data"
+    results = {
+        "written": 0,
+        "overwritten": 0,
+        "excepted": 0,
+        "error": 0
+    }
 
-# file_list = os.listdir(directory)
+    # Download the data and unzip
+    await get_data(path)
+
+    engine = get_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+
+    for file in os.listdir(data_path):
+        logging.info(file)
+
+        if os.path.splitext(file)[1] == '.db':
+            logging.info(f"Its a directory: {file}")
+            d = f"{data_path}\{file}"
+            for item in os.listdir(d):
+                path = os.path.join(d, item)
+                result = import_bestiary(path, Session)
+                if result == 1:
+                    results["written"] += 1
+                elif result == 2:
+                    results["overwritten"] += 1
+                elif result == 3:
+                    results["excepted"] += 1
+                elif result == 4:
+                    results["error"] += 1
+        else:
+            if os.path.splitext(file)[1] == '.json':
+                path = os.path.join('Data', file)
+                result = import_bestiary(path)
+                if result == 1:
+                    results["written"] += 1
+                elif result == 2:
+                    results["overwritten"] += 1
+                elif result == 3:
+                    results["excepted"] += 1
+                elif result == 4:
+                    results["error"] += 1
+
+    summary_string = (f"Database Update Summary\n"
+                      f" Written: {results['written']}\n"
+                      f" Overwritten: {results['overwritten']}\n"
+                      f" Excepted: {results['excepted']}\n"
+                      f" Error: {results['error']}\n\n")
+
+    for item in error_list:
+        summary_string = summary_string + f"\n   {item}"
+    logging.warning(summary_string)
+    await delete_data(f"{path}/pf2e-master")
+    logging.warning("Completed Successfully")
 
 
-for file in os.listdir('Data'):
-    # d=os.path.join('Data', file)
-    logging.info(file)
-    # logging.info(os.path.isdir(file))
-    if os.path.splitext(file)[1] == '.db':
-        logging.info(f"Its a directory: {file}")
-        d = f"Data\{file}"
-        # print(d)
-        # logging.info(d)
-        for item in os.listdir(d):
-            path = os.path.join(d, item)
-            # print(f" whole path: {path}")
-            # logging.info(item)
-            import_bestiary(path)
-    else:
-        if os.path.splitext(file)[1] == '.json':
-            path = os.path.join('Data', file)
-            import_bestiary(path)
-
-# Data/pathfinder-bestiary-2.db/adult-brine-dragon-spellcaster.json
+asyncio.run(main())
