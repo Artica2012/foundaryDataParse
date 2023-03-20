@@ -1,14 +1,10 @@
 # database_operations.py
-import logging
 import os
-
-import sqlalchemy as db
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy import select, inspect
-# imports
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import Session
+import asyncpg
+
 
 load_dotenv(verbose=True)
 if os.environ['PRODUCTION'] == 'True':

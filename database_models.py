@@ -1,20 +1,10 @@
 # database_models.py
 
-import os
-import logging
-
-import sqlalchemy as db
-from dotenv import load_dotenv
 from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer, BigInteger
-from sqlalchemy import String, Boolean
-from sqlalchemy import or_
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy import Integer
+from sqlalchemy import String
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
+
 # define global variables
 
 Base = declarative_base()
