@@ -1,16 +1,10 @@
 # database_operations.py
-import logging
 import os
-
-import sqlalchemy as db
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy import select, inspect
-# imports
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import Session
+import asyncpg
 
-from database_models import NPC, Base
 
 load_dotenv(verbose=True)
 if os.environ['PRODUCTION'] == 'True':
@@ -26,7 +20,6 @@ else:
     HOSTNAME = os.getenv('BETA_Hostname')
     PORT = os.getenv('BETA_PGPort')
 
-GUILD = os.getenv('GUILD')
 SERVER_DATA = os.getenv('SERVERDATA')
 DATABASE = os.getenv('DATABASE')
 
@@ -43,7 +36,7 @@ def get_asyncio_db_engine(user, password, host, port, db):
 
 def get_db_engine(user, password, host, port, db):
     url = f'postgresql://{user}:{password}@{host}:{port}/{db}'
-    # print(url)
+    print(url)
     # if not database_exists(url):
     #     create_database(url)
     engine = create_engine(url, pool_size=10, echo=False)
