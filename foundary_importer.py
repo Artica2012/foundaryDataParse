@@ -110,50 +110,52 @@ async def import_bestiary(file: str, async_session):
                 # print(f"dc: {dc}")
 
                 # Write to the database
-                async with async_session() as session:
-                    async with session.begin():
-                        new_entry = NPC(
-                            name=name,
-                            level=level,
-                            creatureType=creatureType,
-                            alignment=alignment,
-                            ac=int(ac),
-                            hp=int(hp),
-                            init=init_string,
-                            fort=int(fort),
-                            reflex=int(reflex),
-                            will=int(will),
-                            dc=int(dc),
-                            macros=''.join(macro_list)
-                        )
-                        session.add(new_entry)
-                        try:
+                try:
+                    async with async_session() as session:
+                        async with session.begin():
+                            new_entry = NPC(
+                                name=name,
+                                level=level,
+                                creatureType=creatureType,
+                                alignment=alignment,
+                                ac=int(ac),
+                                hp=int(hp),
+                                init=init_string,
+                                fort=int(fort),
+                                reflex=int(reflex),
+                                will=int(will),
+                                dc=int(dc),
+                                macros=''.join(macro_list)
+                            )
+                            session.add(new_entry)
                             await session.commit()
                             logging.info(f"{name} written")
                             return 1
-                        except IntegrityError as e:
-                            if os.environ['Overwrite'] == "True":
-                                npc_result = await session.execute(select(NPC).where(NPC.name == name))
-                                npc = npc_result.scalars().one()
-                                npc.name = name
-                                npc.level = level
-                                npc.creatureType = creatureType
-                                npc.alignment = alignment
-                                npc.ac = int(ac)
-                                npc.hp = int(hp)
-                                npc.init = init_string
-                                npc.fort = int(fort)
-                                npc.reflex = int(reflex)
-                                npc.will = int(will)
-                                npc.dc = int(dc)
-                                npc.macros = ''.join(macro_list)
+                except IntegrityError as e:
+                    if os.environ['Overwrite'] == "True":
+                        async with async_session() as session:
+                            npc_result = await session.execute(select(NPC).where(NPC.name == name))
+                            npc = npc_result.scalars().one()
 
-                                await session.commit()
-                                logging.info(f"{name} overwritten")
-                                return 2
-                            else:
-                                logging.info(f"Excepted {name}")
-                                return 3
+                            npc.name = name
+                            npc.level = level
+                            npc.creatureType = creatureType
+                            npc.alignment = alignment
+                            npc.ac = int(ac)
+                            npc.hp = int(hp)
+                            npc.init = init_string
+                            npc.fort = int(fort)
+                            npc.reflex = int(reflex)
+                            npc.will = int(will)
+                            npc.dc = int(dc)
+                            npc.macros = ''.join(macro_list)
+
+                        await session.commit()
+                        logging.info(f"{name} overwritten")
+                        return 2
+                    else:
+                        logging.info(f"Excepted {name}")
+                        return 3
         return True
     except Exception:
         # logging.warning(e)
@@ -165,79 +167,87 @@ async def main():
     logging.basicConfig(level=logging.WARNING)
     logging.warning("Script Started")
     path = os.getcwd() + '/Data/'
-    data_path = f"{path}/pf2e-master/packs/data"
-    results = {
-        "written": 0,
-        "overwritten": 0,
-        "excepted": 0,
-        "error": 0
-    }
+    logging.warning(path)
+    data_path = f"{path}pf2e-master/packs/data/"
+    logging.warning(data_path)
+    repeat = True
 
-    # Download the data and unzip
-    if await get_data(path):
-        # if True:
+    while repeat:
 
-        engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
-        # Base.metadata.create_all(engine)
-        Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-        Session = sessionmaker(bind=engine)
+        results = {
+            "written": 0,
+            "overwritten": 0,
+            "excepted": 0,
+            "error": 0
+        }
 
-        list_files(data_path)
+        # Download the data and unzip
+        if await get_data(path):
+            # if True:
 
-        for file in os.listdir(data_path):
-            print(file)
-            await asyncio.sleep(0)
-            logging.info(file)
-            try:
-                if os.path.splitext(file)[1] == '.db':
-                    logging.info(f"Its a directory: {file}")
-                    d = f"{data_path}\{file}"
-                    for item in os.listdir(d):
-                        await asyncio.sleep(0)
+            engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
+            # Base.metadata.create_all(engine)
+            Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+            # list_files(data_path)
+
+            for file in os.listdir(data_path):
+                # print(file)
+                await asyncio.sleep(0)
+                logging.warning(file)
+                try:
+                    if os.path.splitext(file)[1] == '.db':
+                        logging.info(f"Its a directory: {file}")
+                        d = f"{data_path}{file}"
+                        for item in os.listdir(d):
+                            await asyncio.sleep(0)
+                            try:
+                                path = os.path.join(d, item)
+                                result = await import_bestiary(path, Session)
+                                if result == 1:
+                                    results["written"] += 1
+                                elif result == 2:
+                                    results["overwritten"] += 1
+                                elif result == 3:
+                                    results["excepted"] += 1
+                                elif result == 4:
+                                    results["error"] += 1
+                            except Exception as e:
+                                logging.warning(f"{item}, {e}")
+                    else:
                         try:
-                            path = os.path.join(d, item)
-                            result = await import_bestiary(path, Session)
-                            if result == 1:
-                                results["written"] += 1
-                            elif result == 2:
-                                results["overwritten"] += 1
-                            elif result == 3:
-                                results["excepted"] += 1
-                            elif result == 4:
-                                results["error"] += 1
+                            if os.path.splitext(file)[1] == '.json':
+                                path = os.path.join('Data', file)
+                                result = await import_bestiary(path)
+                                if result == 1:
+                                    results["written"] += 1
+                                elif result == 2:
+                                    results["overwritten"] += 1
+                                elif result == 3:
+                                    results["excepted"] += 1
+                                elif result == 4:
+                                    results["error"] += 1
                         except Exception as e:
-                            logging.warning(f"{item}, {e}")
-                else:
-                    try:
-                        if os.path.splitext(file)[1] == '.json':
-                            path = os.path.join('Data', file)
-                            result = await import_bestiary(path)
-                            if result == 1:
-                                results["written"] += 1
-                            elif result == 2:
-                                results["overwritten"] += 1
-                            elif result == 3:
-                                results["excepted"] += 1
-                            elif result == 4:
-                                results["error"] += 1
-                    except Exception as e:
-                        logging.warning(f"{file}, {e}")
-            except Exception as e:
-                logging.warning(f"{file}, {e}")
+                            logging.warning(f"{file}, {e}")
+                except Exception as e:
+                    logging.warning(f"{file}, {e}")
 
-        summary_string = (f"Database Update Summary\n"
-                          f" Written: {results['written']}\n"
-                          f" Overwritten: {results['overwritten']}\n"
-                          f" Excepted: {results['excepted']}\n"
-                          f" Error: {results['error']}\n\n")
+            summary_string = (f"Database Update Summary\n"
+                              f" Written: {results['written']}\n"
+                              f" Overwritten: {results['overwritten']}\n"
+                              f" Excepted: {results['excepted']}\n"
+                              f" Error: {results['error']}\n\n")
 
-        for item in error_list:
-            summary_string = summary_string + f"\n   {item}"
-        logging.warning(summary_string)
-        await delete_data(f"{path}/pf2e-master")
-        logging.warning("Completed Successfully")
-    else:
-        logging.warning("Unsuccessful. Aborting")
+            for item in error_list:
+                summary_string = summary_string + f"\n   {item}"
+            logging.warning(summary_string)
+            await delete_data(f"{path}/pf2e-master")
+            logging.warning("Completed Successfully")
+        else:
+            logging.warning("Unsuccessful. Aborting")
+
+        await asyncio.sleep(86400)
+
 
 
 asyncio.run(main())
