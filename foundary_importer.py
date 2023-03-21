@@ -64,6 +64,9 @@ async def delete_data(data_path):
     logging.warning("Data Cleared")
 
 
+async def import_data(file:str, async_session):
+    return await import_bestiary(file, async_session)
+
 async def import_bestiary(file: str, async_session):
     try:
         with open(f"{file}", encoding='utf8') as f:
@@ -162,6 +165,86 @@ async def import_bestiary(file: str, async_session):
         error_list.append(file)
         return 4
 
+async def EPF_import_bestiary(file, async_session):
+    with open(f"{file}", encoding='utf8') as f:
+        # logging.info(f'{file}')
+        data = json.load(f)
+        if data['type'] == 'npc':
+
+            dc=0
+            name = data['name']
+            type = data["system"]["details"]["creatureType"]
+            level = data['system']['details']['level']['value']
+            ac = data['system']['attributes']['ac']['value']
+            hp = data['system']['attributes']['hp']['max']
+            init = data['system']['attributes']['perception']['value']
+
+            str = (data["system"]['abilities']["str"]["mod"] * 2) + 10
+            dex = (data["system"]['abilities']["dex"]["mod"] * 2) + 10
+            con = (data["system"]['abilities']["con"]["mod"] * 2) + 10
+            itl = (data["system"]['abilities']["int"]["mod"] * 2) + 10
+            wis = (data["system"]['abilities']["wis"]["mod"] * 2) + 10
+            cha = (data["system"]['abilities']["cha"]["mod"] * 2) + 10
+
+            fort_prof = data['system']['saves']["fortitude"]["value"] - level - data["system"]['abilities']["con"]["mod"]
+            reflex_prof = data['system']['saves']["reflex"]["value"] - level - data["system"]['abilities']["dex"]["mod"]
+            will_prof = data['system']['saves']["will"]["value"] - level - data["system"]['abilities']["wis"]["mod"]
+            perception_prof = data['system']['attributes']['perception']["value"] - level - data["system"]['abilities']["wis"]["mod"]
+
+
+            for index in data['items']:
+                if index['type'] == "spellcastingEntry":
+                    dc = index['system']['spelldc']['dc']
+                if index['type'] == "melee":
+
+
+            resistance = {
+                "resist":{},
+                "weak": {},
+                "immune": {}
+            }
+            for item in data['system']['attributes']['resistances']:
+                resistance["resist"][item["type"]] = item["value"]
+            for item in data['system']['attributes']['weaknesses']:
+                resistance["weak"][item["type"]] = item["value"]
+            for item in data['system']['attributes']['immunities']:
+                resistance["immune"][item["type"]] = "immune"
+
+        try:
+            async with async_session() as session:
+                async with session.begin():
+                    new_entry = NPC(
+                        name=name,
+                        max_hp=hp,
+                        type=type,
+                        level=level,
+                        ac_base=ac,
+                        class_dc=dc,  # May need to get more granular with this
+                        str=str,
+                        dex=dex,
+                        con=con,
+                        itl=itl,
+                        wis=wis,
+                        cha=cha,
+                        fort_prof=fort_prof,
+                        reflex_prof=reflex_prof,
+                        will_prof=will_prof,
+                        perception_prof=perception_prof,
+
+
+
+
+
+                    )
+                    session.add(new_entry)
+                    await session.commit()
+                    logging.info(f"{name} written")
+                    return 1
+        except IntegrityError as e:
+            pass
+
+
+
 
 async def main():
     logging.basicConfig(level=logging.WARNING)
@@ -203,7 +286,7 @@ async def main():
                             await asyncio.sleep(0)
                             try:
                                 path = os.path.join(d, item)
-                                result = await import_bestiary(path, Session)
+                                result = await import_data(path, Session)
                                 if result == 1:
                                     results["written"] += 1
                                 elif result == 2:
@@ -218,7 +301,7 @@ async def main():
                         try:
                             if os.path.splitext(file)[1] == '.json':
                                 path = os.path.join('Data', file)
-                                result = await import_bestiary(path)
+                                result = await import_data(path)
                                 if result == 1:
                                     results["written"] += 1
                                 elif result == 2:
