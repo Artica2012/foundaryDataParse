@@ -29,7 +29,7 @@ class NPC(Base):
     dc = Column(Integer())
     macros = Column(String())
 
-class Tracker(Base):
+class EPF_NPC(Base):
     __tablename__ = "EPF_npcs"
 
     # The original tracker table
@@ -59,11 +59,6 @@ class Tracker(Base):
     # Proficiencies
     perception_prof = Column(Integer(), nullable=False)
 
-    unarmed_prof = Column(Integer(), nullable=False)
-    simple_prof = Column(Integer(), nullable=False)
-    martial_prof = Column(Integer(), nullable=False)
-    advanced_prof = Column(Integer(), nullable=False)
-
     arcane_prof = Column(Integer(), nullable=False)
     divine_prof = Column(Integer(), nullable=False)
     occult_prof = Column(Integer(), nullable=False)
@@ -87,12 +82,8 @@ class Tracker(Base):
     thievery_prof = Column(Integer(), nullable=False)
 
     # Plan to save parsable lists here
-    lores = Column(String())
-    feats = Column(String())
 
     # Calculated stats
     resistance = Column(JSON())
-    macros = Column(String())
     attacks = Column(JSON())
     spells = Column(JSON())
-    bonuses = Column(JSON())
