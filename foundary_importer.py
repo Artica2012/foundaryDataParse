@@ -76,7 +76,7 @@ async def import_bestiary(file: str, async_session):
         with open(f"{file}", encoding='utf8') as f:
             # logging.info(f'{file}')
             data = json.load(f)
-            if data['type'] == 'npc':
+            if "type" in data.keys() and data['type'] == 'npc':
 
                 dc = 0
                 name = data['name']
@@ -175,13 +175,13 @@ async def EPF_import_bestiary(file, async_session):
     with open(f"{file}", encoding='utf8') as f:
         # logging.info(f'{file}')
         data = json.load(f)
-        if data['type'] == 'npc':
+        if "type" in data.keys() and data['type'] == 'npc':
 
             dc = 0
             attacks = {}
             spells = []
             name = data['name']
-            # print(name)
+            print(name)
             type = data["system"]["details"]["creatureType"]
             level = data['system']['details']['level']['value']
             ac = data['system']['attributes']['ac']['value']
@@ -279,8 +279,10 @@ async def EPF_import_bestiary(file, async_session):
                     attack_data["display"] = index["name"]
                     attack_data["prof"] = "NPC"
                     attack_data["name"] = None
-
-                    attack_data["attk_stat"] = "str"
+                    if index["system"]["weaponType"]["value"] == "ranged":
+                        attack_data["attk_stat"] = "dex"
+                    else:
+                        attack_data["attk_stat"] = "str"
                     attack_data["pot"] = index["system"]["bonus"]["value"] - level - str_mod
                     attack_data["traits"] = index["system"]["traits"]["value"]
                     attack_data["crit"] = "*2"
@@ -289,6 +291,8 @@ async def EPF_import_bestiary(file, async_session):
                         if "deadly" in item:
                             string = item.split("-")
                             attack_data["crit"] = f"*2 + {string[1]}"
+                        if "agile" in item and dex_mod > str_mod:
+                            attack_data["pot"] = index["system"]["bonus"]["value"] - level - dex_mod
 
                     dmg_list = []
                     for key, value in index["system"]["damageRolls"].items():
@@ -345,17 +349,17 @@ async def EPF_import_bestiary(file, async_session):
                     async with session.begin():
                         new_entry = EPF_NPC(
                             name=name,
-                            max_hp=hp,
+                            max_hp=int(hp),
                             type=type,
-                            level=level,
-                            ac_base=ac,
-                            class_dc=dc,  # May need to get more granular with this
-                            str=str,
-                            dex=dex,
-                            con=con,
-                            itl=itl,
-                            wis=wis,
-                            cha=cha,
+                            level=int(level),
+                            ac_base=int(ac),
+                            class_dc=int(dc),  # May need to get more granular with this
+                            str=int(str),
+                            dex=int(dex),
+                            con=int(con),
+                            itl=int(itl),
+                            wis=int(wis),
+                            cha=int(cha),
                             fort_prof=fort_prof,
                             reflex_prof=reflex_prof,
                             will_prof=will_prof,
@@ -396,17 +400,17 @@ async def EPF_import_bestiary(file, async_session):
                         npc = npc_result.scalars().one()
 
                         npc.name = name,
-                        npc.max_hp = hp,
+                        npc.max_hp = int(hp),
                         npc.type = type,
-                        npc.level = level,
-                        npc.ac_base = ac,
-                        npc.class_dc = dc,  # May need to get more granular with this
-                        npc.str = str,
-                        npc.dex = dex,
-                        npc.con = con,
-                        npc.itl = itl,
-                        npc.wis = wis,
-                        npc.cha = cha,
+                        npc.level = int(level),
+                        npc.ac_base = int(ac),
+                        npc.class_dc = int(dc),  # May need to get more granular with this
+                        npc.str = int(str),
+                        npc.dex = int(dex),
+                        npc.con = int(con),
+                        npc.itl = int(itl),
+                        npc.wis = int(wis),
+                        npc.cha = int(cha),
                         npc.fort_prof = fort_prof,
                         npc.reflex_prof = reflex_prof,
                         npc.will_prof = will_prof,
