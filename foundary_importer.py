@@ -292,6 +292,8 @@ async def EPF_import_bestiary(file, async_session):
                             string = item.split("-")
                             attack_data["crit"] = f"*2 + {string[1]}"
                         if "agile" in item and dex_mod > str_mod:
+                            print("Agile")
+                            attack_data["attk_stat"] = "dex"
                             attack_data["pot"] = index["system"]["bonus"]["value"] - level - dex_mod
 
                     dmg_list = []
@@ -440,6 +442,7 @@ async def EPF_import_bestiary(file, async_session):
                         npc.spells = spells
                     await session.commit()
                     logging.info(f"{name} overwritten")
+                    print(attacks)
                     return 2
                 else:
                     logging.info(f"Excepted {name}")
@@ -470,8 +473,8 @@ async def main():
         }
 
         # Download the data and unzip
-        if await get_data(path):
-        # if True:
+        # if await get_data(path):
+        if True:
 
             engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
             Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
