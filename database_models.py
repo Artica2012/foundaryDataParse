@@ -87,3 +87,24 @@ class EPF_NPC(Base):
     resistance = Column(JSON())
     attacks = Column(JSON())
     spells = Column(JSON())
+
+class EPF_Weapon(Base):
+    __tablename__ = "EPF_item_data"
+    # Columns
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    name = Column(String(), unique=True)
+    level = Column(Integer())
+    base_item = Column(String(), unique=False)
+    category = Column(String(), unique=False)
+    damage_type = Column(String(), unique=False)
+    damage_dice = Column(Integer())
+    damage_die = Column(String(), unique=False)
+    group = Column(String(), unique=False)
+    range = Column(Integer())
+    potency_rune = Column(Integer())
+    striking_rune = Column(String(), unique=False)
+    runes = Column(String())
+    traits = Column(JSON())
+
+
+
