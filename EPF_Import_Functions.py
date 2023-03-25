@@ -180,13 +180,13 @@ async def EPF_import_bestiary(file, async_session):
                 }
                 if "resistances" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['resistances']:
-                        resistance["resist"][item["type"]] = item["value"]
+                        resistance["resist"][item["type"].lower()] = item["value"]
                 if "weaknesses" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['weaknesses']:
-                        resistance["weak"][item["type"]] = item["value"]
+                        resistance["weak"][item["type"].lower()] = item["value"]
                 if "immunities" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['immunities']:
-                        resistance["immune"][item["type"]] = "immune"
+                        resistance["immune"][item["type"].lower()] = "immune"
 
                 try:
                     async with async_session() as session:
