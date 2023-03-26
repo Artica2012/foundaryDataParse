@@ -13,7 +13,7 @@ import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from EPF_Import_Functions import EPF_import_bestiary, EPF_import_weapon
+from EPF_Import_Functions import EPF_import_bestiary, EPF_import_weapon, EPF_import_equipment
 from PF2_Import_Functions import import_bestiary
 from database_models import Base
 from database_operations import USERNAME, PASSWORD, HOSTNAME, PORT, DATABASE
@@ -67,6 +67,7 @@ async def import_data(file: str, ledger, async_session):
     ledger = await tally_results(await import_bestiary(file, async_session), ledger, "PF2_NPCs")
     ledger = await tally_results(await EPF_import_bestiary(file, async_session), ledger, "EPF_NPCs")
     ledger = await tally_results(await EPF_import_weapon(file, async_session), ledger, "EPF_Weapon")
+    ledger = await tally_results(await EPF_import_equipment(file, async_session), ledger, "EPF_Equipment")
     return ledger
 
 async def tally_results(result:int, ledger:dict, category:str):
@@ -104,7 +105,14 @@ async def main():
                 "overwritten": 0,
                 "excepted": 0,
                 "error": 0
-            }, "EPF_Weapon": {
+            },
+            "EPF_Weapon": {
+                "written": 0,
+                "overwritten": 0,
+                "excepted": 0,
+                "error": 0
+            },
+            "EPF_Equipment": {
                 "written": 0,
                 "overwritten": 0,
                 "excepted": 0,
@@ -114,8 +122,8 @@ async def main():
         }
 
         # Download the data and unzip
-        if await get_data(path):
-        # if True:
+        # if await get_data(path):
+        if True:
 
             engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
             Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

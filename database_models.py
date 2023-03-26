@@ -106,5 +106,14 @@ class EPF_Weapon(Base):
     runes = Column(String())
     traits = Column(JSON())
 
+class EPF_Equipment(Base):
+    __tablename__ = "EPF_equipment_data"
+    # Columns
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    name = Column(String(), unique=True)
+    level = Column(Integer())
+    data = Column(JSON())
+
+
 
 

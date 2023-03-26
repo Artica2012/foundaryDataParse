@@ -6,7 +6,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from database_models import EPF_NPC, EPF_Weapon
+from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment
 
 
 async def EPF_import_bestiary(file, async_session):
@@ -302,7 +302,7 @@ async def EPF_import_weapon(file: str, async_session):
             # logging.info(f'{file}')
             data = json.load(f)
             if "type" in data.keys() and data['type'] == 'weapon':
-                print(data['name'])
+                # print(data['name'])
                 if data["system"]["potencyRune"]["value"] is None:
                     potency = 0
                 else:
@@ -364,6 +364,64 @@ async def EPF_import_weapon(file: str, async_session):
                     else:
                         logging.info(f"Excepted {data['name']}")
                         return 3
+        return None
+    except Exception:
+        # logging.warning(e)
+        return 4
+
+async def EPF_import_equipment(file: str, async_session):
+    try:
+        with open(f"{file}", encoding='utf8') as f:
+            # logging.info(f'{file}')
+            data = json.load(f)
+            if "type" in data.keys() and data['type'] == 'equipment':
+                if 'rules' in data['system'].keys():
+                    if len(data['system']['rules']) > 0 and data['system']['rules'][0]['key'] == "FlatModifier":
+                        print(data['name'])
+                        rules = {}
+                        try:
+                            for item in data['system']['rules']:
+                                try:
+                                    rules[item['selector']] = item['value']
+                                except KeyError:
+                                    try:
+                                        path = item[path].split('.')
+                                        rules[path.join()] = item['value']
+                                    except Exception:
+                                        pass
+                        except Exception:
+                            return 4
+
+                        # Write to the database
+                        try:
+                            async with async_session() as session:
+                                async with session.begin():
+                                    new_entry = EPF_Equipment(
+                                        name= data["name"],
+                                        level = data["system"]["level"]["value"],
+                                        data = rules
+                                    )
+                                    session.add(new_entry)
+                                    await session.commit()
+                                    logging.info(f"{data['name']} written")
+                                    return 1
+                        except IntegrityError as e:
+                            if os.environ['Overwrite'] == "True":
+                                async with async_session() as session:
+                                    item_result = await session.execute(select(EPF_Equipment).where(EPF_Equipment.name == data['name']))
+                                    item = item_result.scalars().one()
+
+                                    item.name = data["name"]
+                                    item.level = data["system"]["level"]["value"]
+                                    item.data = rules
+
+
+                                await session.commit()
+                                logging.info(f"{data['name']} overwritten")
+                                return 2
+                            else:
+                                logging.info(f"Excepted {data['name']}")
+                                return 3
         return None
     except Exception:
         # logging.warning(e)
