@@ -115,7 +115,7 @@ class EPF_Equipment(Base):
     data = Column(JSON())
 
 class EPF_Spells(Base):
-    __tablename__ = "EPF_equipment_data"
+    __tablename__ = "EPF_spell_data"
     # Columns
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(), unique=True)

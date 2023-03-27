@@ -13,7 +13,7 @@ import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from EPF_Import_Functions import EPF_import_bestiary, EPF_import_weapon, EPF_import_equipment
+from EPF_Import_Functions import EPF_import_bestiary, EPF_import_weapon, EPF_import_equipment, EPF_import_spells
 from PF2_Import_Functions import import_bestiary
 from database_models import Base
 from database_operations import USERNAME, PASSWORD, HOSTNAME, PORT, DATABASE
@@ -68,6 +68,7 @@ async def import_data(file: str, ledger, async_session):
     ledger = await tally_results(await EPF_import_bestiary(file, async_session), ledger, "EPF_NPCs")
     ledger = await tally_results(await EPF_import_weapon(file, async_session), ledger, "EPF_Weapon")
     ledger = await tally_results(await EPF_import_equipment(file, async_session), ledger, "EPF_Equipment")
+    ledger = await tally_results(await EPF_import_spells(file, async_session), ledger, "EPF_Spells")
     return ledger
 
 async def tally_results(result:int, ledger:dict, category:str):
@@ -86,13 +87,11 @@ async def main():
     logging.basicConfig(level=logging.WARNING)
     logging.warning("Script Started")
     repeat = True
+    path = os.getcwd() + '/Data/'
+    logging.warning(path)
+    data_path = f"{path}pf2e-master/packs/data/"
+    logging.warning(data_path)
     while repeat:
-        path = os.getcwd() + '/Data/'
-        logging.warning(path)
-        data_path = f"{path}pf2e-master/packs/data/"
-        logging.warning(data_path)
-
-
         results = {
             "PF2_NPCs": {
                 "written": 0,
@@ -117,13 +116,19 @@ async def main():
                 "overwritten": 0,
                 "excepted": 0,
                 "error": 0
+            },
+            "EPF_Spells": {
+                "written": 0,
+                "overwritten": 0,
+                "excepted": 0,
+                "error": 0
             }
 
         }
 
         # Download the data and unzip
-        # if await get_data(path):
-        if True:
+        if await get_data(path):
+        # if True:
 
             engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
             Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
@@ -135,28 +140,28 @@ async def main():
                 # print(file)
                 await asyncio.sleep(0)
                 logging.warning(file)
-                # try:
-                if os.path.splitext(file)[1] == '.db':
-                    logging.info(f"Its a directory: {file}")
-                    d = f"{data_path}{file}"
-                    for item in os.listdir(d):
-                        await asyncio.sleep(0)
-                        # try:
-                        path = os.path.join(d, item)
-                        results = await import_data(path, results, Session)
+                try:
+                    if os.path.splitext(file)[1] == '.db':
+                        logging.info(f"Its a directory: {file}")
+                        d = f"{data_path}{file}"
+                        for item in os.listdir(d):
+                            await asyncio.sleep(0)
+                            try:
+                                file_path = os.path.join(d, item)
+                                results = await import_data(file_path, results, Session)
 
-                        # except Exception as e:
-                        #     logging.warning(f"{item}, {e}")
-                else:
-                    # try:
-                    if os.path.splitext(file)[1] == '.json':
-                        path = os.path.join('Data', file)
-                        results = await import_data(path, results, Session)
+                            except Exception as e:
+                                logging.warning(f"{item}, {e}")
+                    else:
+                        try:
+                            if os.path.splitext(file)[1] == '.json':
+                                file_path = os.path.join('Data', file)
+                                results = await import_data(file_path, results, Session)
 
-                    # except Exception as e:
-                    #     logging.warning(f"{file}, {e}")
-                # except Exception as e:
-                #     logging.warning(f"{file}, {e}")
+                        except Exception as e:
+                            logging.warning(f"{file}, {e}")
+                except Exception as e:
+                    logging.warning(f"{file}, {e}")
             summary_string = f"Database Update Summary\n"
             for key in results.keys():
                 result_string = (f"{key}\n"
@@ -169,7 +174,7 @@ async def main():
             for item in error_list:
                 summary_string = summary_string + f"\n   {item}"
             logging.warning(summary_string)
-            await delete_data(f"{path}/pf2e-master")
+            # await delete_data(f"{path}/pf2e-master")
             logging.warning("Completed Successfully")
             await engine.dispose()
         else:

@@ -6,7 +6,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment
+from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment, EPF_Spells
 
 
 async def EPF_import_bestiary(file, async_session):
@@ -30,7 +30,7 @@ async def EPF_import_bestiary(file, async_session):
                 str_mod = data["system"]['abilities']["str"]["mod"]
                 str = (str_mod * 2) + 10
                 dex_mod = data["system"]['abilities']["dex"]["mod"]
-                dex = ( dex_mod* 2) + 10
+                dex = (dex_mod * 2) + 10
                 con_mod = data["system"]['abilities']["con"]["mod"]
                 con = (con_mod * 2) + 10
                 itl_mod = data["system"]['abilities']["int"]["mod"]
@@ -171,8 +171,6 @@ async def EPF_import_bestiary(file, async_session):
                         except Exception:
                             pass
 
-
-
                 resistance = {
                     "resist": {},
                     "weak": {},
@@ -308,10 +306,10 @@ async def EPF_import_weapon(file: str, async_session):
                 else:
                     potency = data["system"]["potencyRune"]["value"]
                 runes = ""
-                for x in range(1,6):
+                for x in range(1, 6):
                     try:
                         if data["system"][f"propertyRune{x}"] is not None:
-                            runes += f"{data['system'][f'propertyRune{x}'], }"
+                            runes += f"{data['system'][f'propertyRune{x}'],}"
                     except KeyError:
                         pass
 
@@ -320,19 +318,19 @@ async def EPF_import_weapon(file: str, async_session):
                     async with async_session() as session:
                         async with session.begin():
                             new_entry = EPF_Weapon(
-                                name= data["name"],
-                                level = data["system"]["level"]["value"],
-                                base_item = data["system"]["baseItem"],
-                                category = data["system"]["category"],
-                                damage_type = data["system"]["damage"]["damageType"],
-                                damage_dice = data["system"]["damage"]["dice"],
-                                damage_die = data["system"]["damage"]["die"],
-                                group = data["system"]["group"],
-                                range = data["system"]["range"],
-                                potency_rune = potency,
-                                striking_rune = data["system"]["strikingRune"]["value"],
-                                runes = runes,
-                                traits = data["system"]["traits"]["value"],
+                                name=data["name"],
+                                level=data["system"]["level"]["value"],
+                                base_item=data["system"]["baseItem"],
+                                category=data["system"]["category"],
+                                damage_type=data["system"]["damage"]["damageType"],
+                                damage_dice=data["system"]["damage"]["dice"],
+                                damage_die=data["system"]["damage"]["die"],
+                                group=data["system"]["group"],
+                                range=data["system"]["range"],
+                                potency_rune=potency,
+                                striking_rune=data["system"]["strikingRune"]["value"],
+                                runes=runes,
+                                traits=data["system"]["traits"]["value"],
                             )
                             session.add(new_entry)
                             await session.commit()
@@ -341,7 +339,8 @@ async def EPF_import_weapon(file: str, async_session):
                 except IntegrityError as e:
                     if os.environ['Overwrite'] == "True":
                         async with async_session() as session:
-                            item_result = await session.execute(select(EPF_Weapon).where(EPF_Weapon.name == data['name']))
+                            item_result = await session.execute(
+                                select(EPF_Weapon).where(EPF_Weapon.name == data['name']))
                             item = item_result.scalars().one()
 
                             item.name = data["name"]
@@ -369,6 +368,7 @@ async def EPF_import_weapon(file: str, async_session):
         # logging.warning(e)
         return 4
 
+
 async def EPF_import_equipment(file: str, async_session):
     try:
         with open(f"{file}", encoding='utf8') as f:
@@ -377,19 +377,43 @@ async def EPF_import_equipment(file: str, async_session):
             if "type" in data.keys() and data['type'] == 'equipment':
                 if 'rules' in data['system'].keys():
                     if len(data['system']['rules']) > 0 and data['system']['rules'][0]['key'] == "FlatModifier":
-                        print(data['name'])
+                        # print(data['name'])
                         rules = {}
                         try:
                             for item in data['system']['rules']:
-                                try:
-                                    rules[item['selector']] = item['value']
-                                except KeyError:
-                                    try:
-                                        path = item[path].split('.')
-                                        rules[path.join()] = item['value']
-                                    except Exception:
-                                        pass
-                        except Exception:
+
+                                if item["key"] == "FlatModifier":
+                                    if "predicate" not in item.keys():
+                                        if type(item['selector']) == list:
+                                            for i in item["selector"]:
+                                                if "type" not in item.keys():
+                                                    item_type = "item"
+                                                else:
+                                                    item_type = item["type"]
+                                                rules[i] = {
+                                                    "bonus": item['value'],
+                                                    "mode": item_type
+                                                }
+                                        else:
+                                            if "type" not in item.keys():
+                                                item_type = "item"
+                                            else:
+                                                item_type = item["type"]
+                                            rules[item['selector']] = {
+                                                "bonus": item['value'],
+                                                "mode": item_type
+                                            }
+                                elif item["key"] == "ActiveEffectLike":
+                                    path: str = item["path"]
+                                    new_path = path.split(".")
+                                    # print(new_path)
+                                    rules[new_path[2]] = {
+                                        "bonus": item["value"],
+                                        "mode": item["mode"]
+                                    }
+
+                        except Exception as e:
+                            # print(f"{data['name']}, {e}")
                             return 4
 
                         # Write to the database
@@ -397,9 +421,9 @@ async def EPF_import_equipment(file: str, async_session):
                             async with async_session() as session:
                                 async with session.begin():
                                     new_entry = EPF_Equipment(
-                                        name= data["name"],
-                                        level = data["system"]["level"]["value"],
-                                        data = rules
+                                        name=data["name"],
+                                        level=data["system"]["level"]["value"],
+                                        data=rules
                                     )
                                     session.add(new_entry)
                                     await session.commit()
@@ -408,13 +432,13 @@ async def EPF_import_equipment(file: str, async_session):
                         except IntegrityError as e:
                             if os.environ['Overwrite'] == "True":
                                 async with async_session() as session:
-                                    item_result = await session.execute(select(EPF_Equipment).where(EPF_Equipment.name == data['name']))
+                                    item_result = await session.execute(
+                                        select(EPF_Equipment).where(EPF_Equipment.name == data['name']))
                                     item = item_result.scalars().one()
 
                                     item.name = data["name"]
                                     item.level = data["system"]["level"]["value"]
                                     item.data = rules
-
 
                                 await session.commit()
                                 logging.info(f"{data['name']} overwritten")
@@ -427,37 +451,76 @@ async def EPF_import_equipment(file: str, async_session):
         # logging.warning(e)
         return 4
 
+
 async def EPF_import_spells(file: str, async_session):
     try:
         with open(f"{file}", encoding='utf8') as f:
             # logging.info(f'{file}')
             data = json.load(f)
             if "type" in data.keys() and data['type'] == 'spell':
-                if 'rules' in data['system'].keys():
-                    if len(data['system']['rules']) > 0 and data['system']['rules'][0]['key'] == "FlatModifier":
-                        print(data['name'])
-                        rules = {}
+                # print(data['name'])
+                if data["system"]["spellType"]["value"] == "attack" or data["system"]["spellType"]["value"] == "save":
+                    # print(data['system']['spellType']["value"])
+                    if len(data["system"]["damage"]["value"].keys()) == 0:
+                        return 3
+                    else:
+                        damage = {}
                         try:
-                            for item in data['system']['rules']:
-                                try:
-                                    rules[item['selector']] = item['value']
-                                except KeyError:
-                                    try:
-                                        path = item[path].split('.')
-                                        rules[path.join()] = item['value']
-                                    except Exception:
-                                        pass
+                            for key in data["system"]["damage"]["value"].keys():
+                                damage[key] = {
+                                    "mod": data["system"]["damage"]["value"][key]["applyMod"],
+                                    "value": data["system"]["damage"]["value"][key]["value"],
+                                    "dmg_type": data["system"]["damage"]["value"][key]["type"]["value"]
+                                }
                         except Exception:
-                            return 4
+                            try:
+                                damage["value"] = {
+                                    "mod": data["system"]["damage"]["value"]["applyMod"],
+                                    "value": data["system"]["damage"]["value"]["value"],
+                                    "dmg_type": data["system"]["damage"]["value"]["type"]["value"]
+                                }
+                            except Exception:
+                                for key in data['system']['damage']['value'].keys():
+                                    damage[key] = {
+                                        "mod": False,
+                                        "value": data["system"]["damage"]["value"]["0"]["value"],
+                                        "dmg_type": data["system"]["damage"]["value"]["0"]["type"]["value"]
+                                    }
+                        if "heightening" in data["system"].keys():
+                            try:
+                                heightening = {
+                                    "type": data["system"]["heightening"]["type"],
+                                    "interval": data["system"]["heightening"]["type"],
+                                    "damage": data["system"]["heightening"]["type"]
+                                }
+                            except KeyError:
+                                heightening = {
+                                    "type": "",
+                                    "interval": 0,
+                                    "damage": ""
+                                }
+                        else:
+                            heightening = {
+                                "type": "",
+                                "interval": 0,
+                                "damage": ""
+                            }
 
+                        print(damage)
                         # Write to the database
                         try:
                             async with async_session() as session:
                                 async with session.begin():
-                                    new_entry = EPF_Equipment(
-                                        name= data["name"],
-                                        level = data["system"]["level"]["value"],
-                                        data = rules
+                                    new_entry = EPF_Spells(
+                                        name=data["name"],
+                                        level=data["system"]["level"]["value"],
+                                        type=data["system"]["spellType"]["value"],
+                                        save=data["system"]["save"],
+                                        traditions=data["system"]["traditions"]["value"],
+                                        school=data["system"]["school"]["value"],
+                                        damage=damage,
+                                        heightening=heightening
+
                                     )
                                     session.add(new_entry)
                                     await session.commit()
@@ -466,13 +529,18 @@ async def EPF_import_spells(file: str, async_session):
                         except IntegrityError as e:
                             if os.environ['Overwrite'] == "True":
                                 async with async_session() as session:
-                                    item_result = await session.execute(select(EPF_Equipment).where(EPF_Equipment.name == data['name']))
+                                    item_result = await session.execute(
+                                        select(EPF_Spells).where(EPF_Spells.name == data['name']))
                                     item = item_result.scalars().one()
 
                                     item.name = data["name"]
                                     item.level = data["system"]["level"]["value"]
-                                    item.data = rules
-
+                                    item.type = data["system"]["spellType"]
+                                    item.save = data["system"]["save"]
+                                    item.traditions = data["system"]["traditions"]["value"]
+                                    item.school = data["system"]["school"]["value"]
+                                    item.damage = damage
+                                    item.heightening = heightening
 
                                 await session.commit()
                                 logging.info(f"{data['name']} overwritten")

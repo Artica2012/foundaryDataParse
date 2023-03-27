@@ -19,3 +19,16 @@ Spells
         interval: #
         damage: (roll)
     }
+
+Equipment
+    name = String
+    level = Integer
+    data = {
+        skill: {
+        bonus: effect (#)
+        mode: (type or mode)
+        }
+        {
+
+        }
+    }
