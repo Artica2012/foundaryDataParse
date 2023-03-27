@@ -114,6 +114,21 @@ class EPF_Equipment(Base):
     level = Column(Integer())
     data = Column(JSON())
 
+class EPF_Spells(Base):
+    __tablename__ = "EPF_equipment_data"
+    # Columns
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    name = Column(String(), unique=True)
+    level = Column(Integer())
+    type = Column(String())
+    save = Column(JSON())
+    traditions = Column(JSON())
+    school = Column(String())
+    damage = Column(JSON())
+    heightening = Column(JSON())
+
+
+
 
 
 
