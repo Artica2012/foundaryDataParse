@@ -403,6 +403,7 @@ async def EPF_import_equipment(file: str, async_session):
                                                 "bonus": item['value'],
                                                 "mode": item_type
                                             }
+
                                 elif item["key"] == "ActiveEffectLike":
                                     path: str = item["path"]
                                     new_path = path.split(".")
