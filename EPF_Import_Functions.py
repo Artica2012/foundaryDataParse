@@ -491,8 +491,8 @@ async def EPF_import_spells(file: str, async_session):
                             try:
                                 heightening = {
                                     "type": data["system"]["heightening"]["type"],
-                                    "interval": data["system"]["heightening"]["type"],
-                                    "damage": data["system"]["heightening"]["type"]
+                                    "interval": data["system"]["heightening"]["interval"],
+                                    "damage": data["system"]["heightening"]["damage"]
                                 }
                             except KeyError:
                                 heightening = {
