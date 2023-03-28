@@ -507,7 +507,8 @@ async def EPF_import_spells(file: str, async_session):
                                 "damage": ""
                             }
 
-                        print(damage)
+                        # print(damage)
+                        # print(heightening)
                         # Write to the database
                         try:
                             async with async_session() as session:
@@ -529,6 +530,7 @@ async def EPF_import_spells(file: str, async_session):
                                     return 1
                         except IntegrityError as e:
                             if os.environ['Overwrite'] == "True":
+                                # print("Overwrite")
                                 async with async_session() as session:
                                     item_result = await session.execute(
                                         select(EPF_Spells).where(EPF_Spells.name == data['name']))
@@ -536,15 +538,17 @@ async def EPF_import_spells(file: str, async_session):
 
                                     item.name = data["name"]
                                     item.level = data["system"]["level"]["value"]
-                                    item.type = data["system"]["spellType"]
+                                    item.type = data["system"]["spellType"]["value"]
                                     item.save = data["system"]["save"]
                                     item.traditions = data["system"]["traditions"]["value"]
                                     item.school = data["system"]["school"]["value"]
                                     item.damage = damage
                                     item.heightening = heightening
 
-                                await session.commit()
+                                    await session.commit()
+
                                 logging.info(f"{data['name']} overwritten")
+
                                 return 2
                             else:
                                 logging.info(f"Excepted {data['name']}")
