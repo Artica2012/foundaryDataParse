@@ -18,9 +18,8 @@ async def EPF_import_bestiary(file, async_session):
 
                 dc = 0
                 attacks = {}
-                spells = []
                 name = data['name']
-                # print(name)
+                print(name)
                 type = data["system"]["details"]["creatureType"]
                 level = data['system']['details']['level']['value']
                 ac = data['system']['attributes']['ac']['value']
@@ -65,9 +64,15 @@ async def EPF_import_bestiary(file, async_session):
                 stealth_prof = 0
                 survival_prof = 0
                 thievery_prof = 0
+                spells = {}
+                spell_dc = 0
+                spell_mod = 0
+
                 for index in data['items']:
                     if index['type'] == "spellcastingEntry":
-                        dc = index['system']['spelldc']['dc']
+                        dc = int(index['system']['spelldc']['dc'])
+                        spell_dc = dc
+                        spell_mod = int(index["system"]["spelldc"]["value"])
                         if index["system"]["tradition"] == "occult":
                             occult_prof = index['system']['spelldc']['value'] - level - cha_mod
                         elif index["system"]["tradition"] == "arcane":
@@ -76,6 +81,69 @@ async def EPF_import_bestiary(file, async_session):
                             primal_prof = index['system']['spelldc']['value'] - level - cha_mod
                         elif index["system"]["tradition"] == "divine":
                             divine_prof = index['system']['spelldc']['value'] - level - wis_mod
+                    elif index["type"] == "spell":
+                        print(index["name"])
+                        if index["system"]["spellType"]["value"] == "save" or index["system"]["spellType"]["value"] == "attack":
+                            spell_data = {}
+                            spell_data["level"] = index["system"]["level"]["value"]
+                            spell_data["tradition"] = "NPC"
+                            spell_data["ability"] = "cha"
+                            spell_data["proficiency"] = spell_mod - level - cha_mod
+                            spell_data["type"] = index["system"]["spellType"]["value"]
+                            spell_data["save"] = index["system"]["save"]
+                            damage = {}
+                            try:
+                                for key in index["system"]["damage"]["value"].keys():
+                                    damage[key] = {
+                                        "mod": index["system"]["damage"]["value"][key]["applyMod"],
+                                        "value": index["system"]["damage"]["value"][key]["value"],
+                                        "dmg_type": index["system"]["damage"]["value"][key]["type"]["value"]
+                                    }
+                            except Exception:
+                                try:
+                                    damage["value"] = {
+                                        "mod": index["system"]["damage"]["value"]["applyMod"],
+                                        "value": index["system"]["damage"]["value"]["value"],
+                                        "dmg_type": index["system"]["damage"]["value"]["type"]["value"]
+                                    }
+                                except Exception:
+                                    for key in index['system']['damage']['value'].keys():
+                                        damage[key] = {
+                                            "mod": False,
+                                            "value": index["system"]["damage"]["value"][key]["value"],
+                                            "dmg_type": index["system"]["damage"]["value"][key]["type"]["value"]
+                                        }
+                            spell_data["damage"] = damage
+
+                            if "heightening" in index["system"].keys():
+                                try:
+                                    if index["system"]["heightening"]["type"] == "fixed":
+                                        heightening = {
+                                            "type": index["system"]["heightening"]["type"],
+                                            "interval": index["system"]["heightening"]["levels"],
+                                        }
+                                    else:
+                                        heightening = {
+                                            "type": index["system"]["heightening"]["type"],
+                                            "interval": index["system"]["heightening"]["interval"],
+                                            "damage": index["system"]["heightening"]["damage"]
+                                        }
+                                except KeyError:
+                                    heightening = {
+                                        "type": "",
+                                        "interval": 0,
+                                        "damage": ""
+                                    }
+                            else:
+                                heightening = {
+                                    "type": "",
+                                    "interval": 0,
+                                    "damage": ""
+                                }
+                            spell_data["heightening"] = heightening
+
+                            spells[index["name"]] = spell_data
+
                     elif index["type"] == "lore":
                         match index["name"]:
                             case "Acrobatics":
@@ -484,8 +552,8 @@ async def EPF_import_spells(file: str, async_session):
                                 for key in data['system']['damage']['value'].keys():
                                     damage[key] = {
                                         "mod": False,
-                                        "value": data["system"]["damage"]["value"]["0"]["value"],
-                                        "dmg_type": data["system"]["damage"]["value"]["0"]["type"]["value"]
+                                        "value": data["system"]["damage"]["value"][key]["value"],
+                                        "dmg_type": data["system"]["damage"]["value"][key]["type"]["value"]
                                     }
                         if "heightening" in data["system"].keys():
                             try:
