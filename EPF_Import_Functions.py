@@ -489,11 +489,17 @@ async def EPF_import_spells(file: str, async_session):
                                     }
                         if "heightening" in data["system"].keys():
                             try:
-                                heightening = {
-                                    "type": data["system"]["heightening"]["type"],
-                                    "interval": data["system"]["heightening"]["interval"],
-                                    "damage": data["system"]["heightening"]["damage"]
-                                }
+                                if data["system"]["heightening"]["type"] == "fixed":
+                                    heightening = {
+                                        "type": data["system"]["heightening"]["type"],
+                                        "interval": data["system"]["heightening"]["levels"],
+                                    }
+                                else:
+                                    heightening = {
+                                        "type": data["system"]["heightening"]["type"],
+                                        "interval": data["system"]["heightening"]["interval"],
+                                        "damage": data["system"]["heightening"]["damage"]
+                                    }
                             except KeyError:
                                 heightening = {
                                     "type": "",
