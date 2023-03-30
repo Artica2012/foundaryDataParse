@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from math import ceil
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -86,6 +87,13 @@ async def EPF_import_bestiary(file, async_session):
                         if (index["system"]["spellType"]["value"] == "save" or index["system"]["spellType"]["value"] == "attack") and index["system"]["damage"]["value"] != {}:
                             spell_data = {}
                             spell_data["level"] = index["system"]["level"]["value"]
+                            if "heightenedLevel" in index["system"]["location"].keys():
+                                spell_data["cast_level"] = index["system"]["location"]["heightenedLevel"]
+                            else:
+                                if "cantrip" in index["system"]["traits"]["value"]:
+                                    spell_data["cast_leve"] = ceil(level/2)
+                                else:
+                                    spell_data["cast_level"] = index["system"]["level"]["value"]
                             spell_data["tradition"] = "NPC"
                             spell_data["ability"] = "cha"
                             spell_data["proficiency"] = spell_mod - level - cha_mod
