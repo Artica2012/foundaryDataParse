@@ -127,8 +127,8 @@ async def main():
         }
 
         # Download the data and unzip
-        if await get_data(path):
-        # if True:
+        # if await get_data(path):
+        if True:
 
             engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
             Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

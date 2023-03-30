@@ -89,6 +89,7 @@ async def EPF_import_bestiary(file, async_session):
                             spell_data["tradition"] = "NPC"
                             spell_data["ability"] = "cha"
                             spell_data["proficiency"] = spell_mod - level - cha_mod
+                            spell_data["dc"] = spell_dc - level - cha_mod
                             spell_data["type"] = index["system"]["spellType"]["value"]
                             spell_data["save"] = index["system"]["save"]
                             damage = {}
