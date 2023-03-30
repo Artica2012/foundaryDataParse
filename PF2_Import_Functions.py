@@ -95,7 +95,7 @@ async def import_bestiary(file: str, async_session):
                             npc.dc = int(dc)
                             npc.macros = ''.join(macro_list)
 
-                        await session.commit()
+                            await session.commit()
                         logging.info(f"{name} overwritten")
                         return 2
                     else:

@@ -82,8 +82,8 @@ async def EPF_import_bestiary(file, async_session):
                         elif index["system"]["tradition"] == "divine":
                             divine_prof = index['system']['spelldc']['value'] - level - wis_mod
                     elif index["type"] == "spell":
-                        print(index["name"])
-                        if index["system"]["spellType"]["value"] == "save" or index["system"]["spellType"]["value"] == "attack":
+                        # print(index["name"])
+                        if (index["system"]["spellType"]["value"] == "save" or index["system"]["spellType"]["value"] == "attack") and index["system"]["damage"]["value"] != {}:
                             spell_data = {}
                             spell_data["level"] = index["system"]["level"]["value"]
                             spell_data["tradition"] = "NPC"
@@ -231,14 +231,7 @@ async def EPF_import_bestiary(file, async_session):
                             except Exception:
                                 pass
                         attacks[index["name"]] = attack_data
-                    elif index["type"] == "spell":
-                        try:
-                            spells.append({
-                                "name": index["name"],
-                                "level": index["level"]["value"]
-                            })
-                        except Exception:
-                            pass
+
 
                 resistance = {
                     "resist": {},
@@ -254,6 +247,8 @@ async def EPF_import_bestiary(file, async_session):
                 if "immunities" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['immunities']:
                         resistance["immune"][item["type"].lower()] = "immune"
+
+                print(spells)
 
                 try:
                     async with async_session() as session:
@@ -312,47 +307,54 @@ async def EPF_import_bestiary(file, async_session):
                             npc_result = await session.execute(select(EPF_NPC).where(EPF_NPC.name == name))
                             npc = npc_result.scalars().one()
 
-                            npc.name = name,
-                            npc.max_hp = int(hp),
-                            npc.type = type,
-                            npc.level = int(level),
-                            npc.ac_base = int(ac),
-                            npc.class_dc = int(dc),  # May need to get more granular with this
-                            npc.str = int(str),
-                            npc.dex = int(dex),
-                            npc.con = int(con),
-                            npc.itl = int(itl),
-                            npc.wis = int(wis),
-                            npc.cha = int(cha),
-                            npc.fort_prof = fort_prof,
-                            npc.reflex_prof = reflex_prof,
-                            npc.will_prof = will_prof,
-                            npc.perception_prof = perception_prof,
-                            npc.arcane_prof = arcane_prof,
-                            npc.divine_prof = divine_prof,
-                            npc.occult_prof = occult_prof,
-                            npc.primal_prof = primal_prof,
-                            npc.acrobatics_prof = acrobatics_prof,
-                            npc.arcana_prof = arcana_prof,
-                            npc.athletics_prof = athletics_prof,
-                            npc.crafting_prof = crafting_prof,
-                            npc.deception_prof = deception_prof,
-                            npc.diplomacy_prof = diplomacy_prof,
-                            npc.intimidation_prof = intimidation_prof,
-                            npc.medicine_prof = medicine_prof,
-                            npc.nature_prof = nature_prof,
-                            npc.occultism_prof = occultism_prof,
-                            npc.performance_prof = performance_prof,
-                            npc.religion_prof = religion_prof,
-                            npc.society_prof = society_prof,
-                            npc.stealth_prof = stealth_prof,
-                            npc.survival_prof = survival_prof,
-                            npc.thievery_prof = thievery_prof,
-                            npc.resistance = resistance,
-                            npc.attacks = attacks,
+                            npc.name = name
+                            npc.max_hp = int(hp)
+                            npc.type = type
+                            npc.level = int(level)
+                            npc.ac_base = int(ac)
+                            npc.class_dc = int(dc)  # May need to get more granular with this
+                            npc.str = int(str)
+                            npc.dex = int(dex)
+                            npc.con = int(con)
+                            npc.itl = int(itl)
+                            npc.wis = int(wis)
+                            npc.cha = int(cha)
+                            npc.fort_prof = fort_prof
+                            npc.reflex_prof = reflex_prof
+                            npc.will_prof = will_prof
+                            npc.perception_prof = perception_prof
+                            npc.arcane_prof = arcane_prof
+                            npc.divine_prof = divine_prof
+                            npc.occult_prof = occult_prof
+                            npc.primal_prof = primal_prof
+                            npc.acrobatics_prof = acrobatics_prof
+                            npc.arcana_prof = arcana_prof
+                            npc.athletics_prof = athletics_prof
+                            npc.crafting_prof = crafting_prof
+                            npc.deception_prof = deception_prof
+                            npc.diplomacy_prof = diplomacy_prof
+                            npc.intimidation_prof = intimidation_prof
+                            npc.medicine_prof = medicine_prof
+                            npc.nature_prof = nature_prof
+                            npc.occultism_prof = occultism_prof
+                            npc.performance_prof = performance_prof
+                            npc.religion_prof = religion_prof
+                            npc.society_prof = society_prof
+                            npc.stealth_prof = stealth_prof
+                            npc.survival_prof = survival_prof
+                            npc.thievery_prof = thievery_prof
+                            npc.resistance = resistance
+                            npc.attacks = attacks
                             npc.spells = spells
-                        await session.commit()
+
+                            await session.commit()
                         logging.info(f"{name} overwritten")
+                        # print(spells)
+                        # async with async_session() as session:
+                        #     npc_result = await session.execute(select(EPF_NPC).where(EPF_NPC.name == name))
+                        #     npc = npc_result.scalars().one()
+                        #     print(npc.spells)
+
                         # print(attacks)
                         return 2
                     else:
@@ -426,7 +428,7 @@ async def EPF_import_weapon(file: str, async_session):
                             item.runes = runes
                             item.traits = data["system"]["traits"]["value"]
 
-                        await session.commit()
+                            await session.commit()
                         logging.info(f"{data['name']} overwritten")
                         return 2
                     else:
@@ -510,7 +512,7 @@ async def EPF_import_equipment(file: str, async_session):
                                     item.level = data["system"]["level"]["value"]
                                     item.data = rules
 
-                                await session.commit()
+                                    await session.commit()
                                 logging.info(f"{data['name']} overwritten")
                                 return 2
                             else:
