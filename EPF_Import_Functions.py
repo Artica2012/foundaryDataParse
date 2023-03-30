@@ -91,7 +91,7 @@ async def EPF_import_bestiary(file, async_session):
                                 spell_data["cast_level"] = index["system"]["location"]["heightenedLevel"]
                             else:
                                 if "cantrip" in index["system"]["traits"]["value"]:
-                                    spell_data["cast_leve"] = ceil(level/2)
+                                    spell_data["cast_level"] = ceil(level/2)
                                 else:
                                     spell_data["cast_level"] = index["system"]["level"]["value"]
                             spell_data["tradition"] = "NPC"
