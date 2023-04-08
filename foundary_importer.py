@@ -13,6 +13,7 @@ import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+import EPF_Import_Functions
 from EPF_Import_Functions import EPF_import_bestiary, EPF_import_weapon, EPF_import_equipment, EPF_import_spells
 from PF2_Import_Functions import import_bestiary
 from database_models import Base
@@ -21,6 +22,7 @@ from database_operations import get_asyncio_db_engine
 
 DOWNLOAD_URL = "https://github.com/foundryvtt/pf2e/archive/refs/heads/master.zip"
 error_list = []
+
 
 
 def list_files(startpath):
@@ -176,6 +178,10 @@ async def main():
             logging.warning(summary_string)
             # await delete_data(f"{path}/pf2e-master")
             logging.warning("Completed Successfully")
+            print("\nResistances\n")
+            print(EPF_Import_Functions.resistances)
+            print("\nDamage Types\n")
+            print(EPF_Import_Functions.damages)
             await engine.dispose()
         else:
             logging.warning("Unsuccessful. Aborting")

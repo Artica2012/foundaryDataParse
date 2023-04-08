@@ -9,6 +9,9 @@ from sqlalchemy.exc import IntegrityError
 
 from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment, EPF_Spells
 
+resistances = []
+damages = []
+
 
 async def EPF_import_bestiary(file, async_session):
     try:
@@ -108,6 +111,8 @@ async def EPF_import_bestiary(file, async_session):
                                         "value": index["system"]["damage"]["value"][key]["value"],
                                         "dmg_type": index["system"]["damage"]["value"][key]["type"]["value"]
                                     }
+                                    if index["system"]["damage"]["value"][key]["type"]["value"] not in damages:
+                                        damages.append(index["system"]["damage"]["value"][key]["type"]["value"])
                             except Exception:
                                 try:
                                     damage["value"] = {
@@ -115,6 +120,8 @@ async def EPF_import_bestiary(file, async_session):
                                         "value": index["system"]["damage"]["value"]["value"],
                                         "dmg_type": index["system"]["damage"]["value"]["type"]["value"]
                                     }
+                                    if index["system"]["damage"]["value"][key]["type"]["value"] not in damages:
+                                        damages.append(index["system"]["damage"]["value"][key]["type"]["value"])
                                 except Exception:
                                     for key in index['system']['damage']['value'].keys():
                                         damage[key] = {
@@ -122,6 +129,8 @@ async def EPF_import_bestiary(file, async_session):
                                             "value": index["system"]["damage"]["value"][key]["value"],
                                             "dmg_type": index["system"]["damage"]["value"][key]["type"]["value"]
                                         }
+                                        if index["system"]["damage"]["value"][key]["type"]["value"] not in damages:
+                                            damages.append(index["system"]["damage"]["value"][key]["type"]["value"])
                             spell_data["damage"] = damage
 
                             if "heightening" in index["system"].keys():
@@ -230,11 +239,15 @@ async def EPF_import_bestiary(file, async_session):
                                     except IndexError:
                                         attack_data["stat"] = 0
                                     attack_data["dmg_type"] = item["damageType"]
+                                    if item["damageType"] not in damages:
+                                        damages.append(item["damageType"])
                                 else:
                                     bns_dmg = {
                                         "damage": item["damage"],
                                         "dmg_type": item["damageType"]
                                     }
+                                    if item["damageType"] not in damages:
+                                        damages.append(item["damageType"])
                                     attack_data["bonus"].append(bns_dmg)
                             except Exception:
                                 pass
@@ -249,12 +262,18 @@ async def EPF_import_bestiary(file, async_session):
                 if "resistances" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['resistances']:
                         resistance["resist"][item["type"].lower()] = item["value"]
+                        if item["type"] not in resistances:
+                            resistances.append(item["type"])
                 if "weaknesses" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['weaknesses']:
                         resistance["weak"][item["type"].lower()] = item["value"]
+                        if item["type"] not in resistances:
+                            resistances.append(item["type"])
                 if "immunities" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['immunities']:
                         resistance["immune"][item["type"].lower()] = "immune"
+                        if item["type"] not in resistances:
+                            resistances.append(item["type"])
 
                 print(spells)
 
