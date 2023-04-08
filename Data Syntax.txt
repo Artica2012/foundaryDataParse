@@ -1,0 +1,46 @@
+Spells
+
+    name = Column(String(), unique=True)
+    level = Integer
+    type = ("save" or "attack")
+    save = {
+        basic: "basic"
+        value: ("reflex" or "will" or "fortitude")
+    }
+    traditions = []
+    school = ""
+    damage[key] = {
+        mod: bool
+        value: roll (eg 3d8)
+        dmg_type: ""
+    }
+    heightening[key] = {
+        type: (eg. interval)
+        interval: #
+        damage: (roll)
+    }
+
+spellName = {
+                        "level": spell_level["spellLevel"],
+                        "tradition": item["magicTradition"],
+                        "ability": item["ability"],
+                        "proficiency": item["proficiency"],
+                        "type": spell_data[1].type,
+                        "save": spell_data[1].save,
+                        "damage": spell_data[1].damage,
+                        "heightening": spell_data[1].heightening
+                    }
+                    spell_library[spell_name] = spell
+
+Equipment
+    name = String
+    level = Integer
+    data = {
+        skill: {
+        bonus: effect (#)
+        mode: (type or mode)
+        }
+        {
+
+        }
+    }
