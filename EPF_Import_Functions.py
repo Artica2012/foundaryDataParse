@@ -357,19 +357,12 @@ async def EPF_import_bestiary(file, async_session):
 
                             await session.commit()
                         logging.info(f"{name} overwritten")
-                        # print(spells)
-                        # async with async_session() as session:
-                        #     npc_result = await session.execute(select(EPF_NPC).where(EPF_NPC.name == name))
-                        #     npc = npc_result.scalars().one()
-                        #     print(npc.spells)
-
-                        # print(attacks)
                         return 2
                     else:
                         logging.info(f"Excepted {name}")
                         return 3
     except Exception:
-        # logging.warning(e)
+        logging.warning(e)
         return 4
 
 
@@ -444,7 +437,7 @@ async def EPF_import_weapon(file: str, async_session):
                         return 3
         return None
     except Exception:
-        # logging.warning(e)
+        logging.warning(e)
         return 4
 
 
@@ -528,7 +521,7 @@ async def EPF_import_equipment(file: str, async_session):
                                 return 3
         return None
     except Exception:
-        # logging.warning(e)
+        logging.warning(e)
         return 4
 
 
@@ -592,8 +585,6 @@ async def EPF_import_spells(file: str, async_session):
                                 "damage": ""
                             }
 
-                        # print(damage)
-                        # print(heightening)
                         # Write to the database
                         try:
                             async with async_session() as session:
@@ -640,5 +631,5 @@ async def EPF_import_spells(file: str, async_session):
                                 return 3
         return None
     except Exception:
-        # logging.warning(e)
+        logging.warning(e)
         return 4

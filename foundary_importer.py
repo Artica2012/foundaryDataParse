@@ -54,11 +54,11 @@ async def delete_data(data_path):
     for root, dirs, files in os.walk(data_path):
         print(root, dirs, files)
         for f in files:
-            print(root, f)
+            # print(root, f)
             os.unlink(os.path.join(root, f))
 
         for d in dirs:
-            print(root, d)
+            # print(root, d)
             shutil.rmtree(os.path.join(root, d))
     logging.warning("Data Cleared")
 
@@ -127,8 +127,8 @@ async def main():
         }
 
         # Download the data and unzip
-        # if await get_data(path):
-        if True:
+        if await get_data(path):
+        # if True:
 
             engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
             Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
@@ -140,28 +140,28 @@ async def main():
                 # print(file)
                 await asyncio.sleep(0)
                 logging.warning(file)
-                # try:
-                if os.path.splitext(file)[1] == '.db':
-                    logging.info(f"Its a directory: {file}")
-                    d = f"{data_path}{file}"
-                    for item in os.listdir(d):
-                        await asyncio.sleep(0)
-                        # try:
-                        file_path = os.path.join(d, item)
-                        results = await import_data(file_path, results, Session)
+                try:
+                    if os.path.splitext(file)[1] == '.db':
+                        logging.info(f"Its a directory: {file}")
+                        d = f"{data_path}{file}"
+                        for item in os.listdir(d):
+                            await asyncio.sleep(0)
+                            try:
+                                file_path = os.path.join(d, item)
+                                results = await import_data(file_path, results, Session)
 
-                        # except Exception as e:
-                        #     logging.warning(f"{item}, {e}")
-                else:
-                    # try:
-                    if os.path.splitext(file)[1] == '.json':
-                        file_path = os.path.join('Data', file)
-                        results = await import_data(file_path, results, Session)
+                            except Exception as e:
+                                logging.warning(f"{item}, {e}")
+                    else:
+                        try:
+                            if os.path.splitext(file)[1] == '.json':
+                                file_path = os.path.join('Data', file)
+                                results = await import_data(file_path, results, Session)
 
-                    # except Exception as e:
-                    #     logging.warning(f"{file}, {e}")
-                # except Exception as e:
-                #     logging.warning(f"{file}, {e}")
+                        except Exception as e:
+                            logging.warning(f"{file}, {e}")
+                except Exception as e:
+                    logging.warning(f"{file}, {e}")
             summary_string = f"Database Update Summary\n"
             for key in results.keys():
                 result_string = (f"{key}\n"
