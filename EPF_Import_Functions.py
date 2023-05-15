@@ -7,7 +7,7 @@ from math import ceil
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment, EPF_Spells
+from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment, EPF_Spells, excepted_spells
 
 resistances = []
 damages = []
@@ -191,7 +191,7 @@ async def EPF_import_bestiary(file, async_session):
                             case "Society":
                                 society_prof = index["system"]["mod"]["value"] - level - itl_mod
                             case "Stealth":
-                                stealth = index["system"]["mod"]["value"] - level - dex_mod
+                                stealth_prof = index["system"]["mod"]["value"] - level - dex_mod
                             case "Survival":
                                 survival_prof = index["system"]["mod"]["value"] - level - wis_mod
                             case "Thievery":
@@ -621,6 +621,7 @@ async def EPF_import_spells(file: str, async_session):
                                     session.add(new_entry)
                                     await session.commit()
                                     logging.info(f"{data['name']} written")
+                                    # print("written")
                                     return 1
                         except IntegrityError as e:
                             if os.environ['Overwrite'] == "True":
@@ -642,12 +643,17 @@ async def EPF_import_spells(file: str, async_session):
                                     await session.commit()
 
                                 logging.info(f"{data['name']} overwritten")
-
+                                # print("overwritten")
                                 return 2
                             else:
                                 logging.info(f"Excepted {data['name']}")
+                                # print(data["name"])
+                                # print("excepted")
                                 return 3
+        # print(data['name'])
+        excepted_spells.append(data["name"])
         return None
     except Exception:
         logging.warning(e)
+        # print("errored")
         return 4

@@ -1,10 +1,10 @@
 # database_operations.py
 import os
+
+import asyncpg
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
-import asyncpg
-
 
 load_dotenv(verbose=True)
 if os.environ['PRODUCTION'] == 'True':

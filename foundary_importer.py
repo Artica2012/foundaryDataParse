@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 import EPF_Import_Functions
+import database_models
 from EPF_Import_Functions import EPF_import_bestiary, EPF_import_weapon, EPF_import_equipment, EPF_import_spells
 from PF2_Import_Functions import import_bestiary
 from database_models import Base
@@ -22,6 +23,7 @@ from database_operations import get_asyncio_db_engine
 
 DOWNLOAD_URL = "https://github.com/foundryvtt/pf2e/archive/refs/heads/master.zip"
 error_list = []
+
 
 
 
@@ -74,6 +76,7 @@ async def import_data(file: str, ledger, async_session):
     return ledger
 
 async def tally_results(result:int, ledger:dict, category:str):
+    # print(result)
     if result == 1:
         ledger[category]["written"] += 1
     elif result == 2:
@@ -82,6 +85,7 @@ async def tally_results(result:int, ledger:dict, category:str):
         ledger[category]["excepted"] += 1
     elif result == 4:
         ledger[category]["error"] += 1
+        print("ERROR!!!!!!!!!!!!!!!!!!!!!!!")
 
     return ledger
 
@@ -144,7 +148,7 @@ async def main():
                 logging.warning(file)
                 try:
                     if os.path.splitext(file)[1] == '.db':
-                        logging.info(f"Its a directory: {file}")
+                        # logging.info(f"Its a directory: {file}")
                         d = f"{data_path}{file}"
                         for item in os.listdir(d):
                             await asyncio.sleep(0)
@@ -167,10 +171,10 @@ async def main():
             summary_string = f"Database Update Summary\n"
             for key in results.keys():
                 result_string = (f"{key}\n"
-                                  f"  Written: {results[key]['written']}\n"
-                                  f"  Overwritten: {results[key]['overwritten']}\n"
-                                  f"  Excepted: {results[key]['excepted']}\n"
-                                  f"  Error: {results[key]['error']}\n\n")
+                                  f"  Written: {results[key]['written']}"
+                                  f"  Overwritten: {results[key]['overwritten']}"
+                                  f"  Excepted: {results[key]['excepted']}"
+                                  f"  Error: {results[key]['error']}\n")
                 summary_string = summary_string + result_string
 
             for item in error_list:
@@ -178,6 +182,7 @@ async def main():
             logging.warning(summary_string)
             # await delete_data(f"{path}/pf2e-master")
             logging.warning("Completed Successfully")
+            # print(database_models.excepted_spells)
             # print("\nResistances\n")
             # print(EPF_Import_Functions.resistances)
             # print("\nDamage Types\n")

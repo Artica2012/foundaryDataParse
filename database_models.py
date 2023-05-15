@@ -7,6 +7,8 @@ from sqlalchemy.orm import declarative_base
 
 # define global variables
 
+excepted_spells = []
+
 Base = declarative_base()
 
 
