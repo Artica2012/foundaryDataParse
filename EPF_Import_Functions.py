@@ -206,9 +206,10 @@ async def EPF_import_bestiary(file, async_session):
                         attack_data["name"] = None
                         if index["system"]["weaponType"]["value"] == "ranged":
                             attack_data["attk_stat"] = "dex"
+                            attack_data["pot"] = index["system"]["bonus"]["value"] - level - dex_mod
                         else:
                             attack_data["attk_stat"] = "str"
-                        attack_data["pot"] = index["system"]["bonus"]["value"] - level - str_mod
+                            attack_data["pot"] = index["system"]["bonus"]["value"] - level - str_mod
                         attack_data["traits"] = index["system"]["traits"]["value"]
                         attack_data["crit"] = "*2"
 
