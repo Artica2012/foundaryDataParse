@@ -262,17 +262,53 @@ async def EPF_import_bestiary(file, async_session):
                 }
                 if "resistances" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['resistances']:
-                        resistance["resist"][item["type"].lower()] = item["value"]
+                        if "exceptions" in item.keys():
+                            item_name = item['type'].lower()
+                            exceptions = item['exceptions']
+                            value = item['value']
+
+                            resistance['resist'][item_name] = {
+                                "exceptions": exceptions,
+                                'value': value
+                            }
+                        else:
+                            resistance["resist"][item["type"].lower()] = item["value"]
+
+
                         if item["type"] not in resistances:
                             resistances.append(item["type"])
                 if "weaknesses" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['weaknesses']:
-                        resistance["weak"][item["type"].lower()] = item["value"]
+                        if "exceptions" in item.keys():
+                            item_name = item['type'].lower()
+                            exceptions = item['exceptions']
+                            value = item['value']
+
+                            resistance['weak'][item_name] = {
+                                "exceptions": exceptions,
+                                'value': value
+                            }
+                        else:
+                            resistance["weak"][item["type"].lower()] = item["value"]
+
+
+
                         if item["type"] not in resistances:
                             resistances.append(item["type"])
                 if "immunities" in data["system"]["attributes"].keys():
                     for item in data['system']['attributes']['immunities']:
-                        resistance["immune"][item["type"].lower()] = "immune"
+                        if "exceptions" in item.keys():
+                            item_name = item['type'].lower()
+                            exceptions = item['exceptions']
+                            value = item['value']
+
+                            resistance['immune'][item_name] = {
+                                "exceptions": exceptions,
+                                'value': value
+                            }
+                        else:
+                            resistance["immune"][item["type"].lower()] = "immune"
+
                         if item["type"] not in resistances:
                             resistances.append(item["type"])
 
