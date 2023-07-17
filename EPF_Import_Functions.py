@@ -300,7 +300,7 @@ async def EPF_import_bestiary(file, async_session):
                         if "exceptions" in item.keys():
                             item_name = item['type'].lower()
                             exceptions = item['exceptions']
-                            value = item['value']
+                            value = 1
 
                             resistance['immune'][item_name] = {
                                 "exceptions": exceptions,
@@ -417,7 +417,7 @@ async def EPF_import_bestiary(file, async_session):
                     else:
                         logging.info(f"Excepted {name}")
                         return 3
-    except Exception:
+    except Exception as e:
         logging.warning(e)
         return 4
 
@@ -492,7 +492,7 @@ async def EPF_import_weapon(file: str, async_session):
                         logging.info(f"Excepted {data['name']}")
                         return 3
         return None
-    except Exception:
+    except Exception as e:
         logging.warning(e)
         return 4
 
@@ -542,7 +542,7 @@ async def EPF_import_equipment(file: str, async_session):
                                     }
 
                         except Exception as e:
-                            # print(f"{data['name']}, {e}")
+                            logging.warning(f"{data['name']}, {e}")
                             return 4
 
                         # Write to the database
@@ -576,7 +576,7 @@ async def EPF_import_equipment(file: str, async_session):
                                 logging.info(f"Excepted {data['name']}")
                                 return 3
         return None
-    except Exception:
+    except Exception as e:
         logging.warning(e)
         return 4
 
@@ -690,7 +690,7 @@ async def EPF_import_spells(file: str, async_session):
         # print(data['name'])
         excepted_spells.append(data["name"])
         return None
-    except Exception:
+    except Exception as e:
         logging.warning(e)
         # print("errored")
         return 4
