@@ -312,7 +312,17 @@ async def EPF_import_bestiary(file, async_session):
                         if item["type"] not in resistances:
                             resistances.append(item["type"])
 
-                # print(spells)
+                if 'initiative' in data['system']['attributes'].keys():
+                    if data['system']['attributes']['initiative']['statistic'] != "perception":
+                        init_skill = data['system']['attributes']['initiative']['statistic']
+                        print(f"{name} - Init Skill: {init_skill}")
+                        try:
+                            resistance['other']['init-skill'] = init_skill
+                        except KeyError:
+                            resistance['other'] = {}
+                            resistance['other']['init-skill'] = init_skill
+
+
 
                 try:
                     async with async_session() as session:
@@ -417,6 +427,213 @@ async def EPF_import_bestiary(file, async_session):
                     else:
                         logging.info(f"Excepted {name}")
                         return 3
+            elif "type" in data.keys() and data['type'] == 'hazard':
+                try:
+                    name = data['name']
+                    # print(name)
+                    if data["system"]["details"]["isComplex"]:
+                        type = "Complex Hazard"
+                    else:
+                        type = "Hazard"
+                    level = data['system']['details']['level']['value']
+                    ac = data['system']['attributes']['ac']['value']
+                    hp = data['system']['attributes']['hp']['max']
+                    if hp is None:
+                        hp = 0
+
+                    str_mod = 0
+                    str = (str_mod * 2) + 10
+                    dex_mod = 0
+                    dex = (dex_mod * 2) + 10
+                    con_mod = 0
+                    con = (con_mod * 2) + 10
+                    itl_mod = 0
+                    itl = (itl_mod * 2) + 10
+                    wis_mod = 0
+                    wis = (wis_mod * 2) + 10
+                    cha_mod = 0
+                    cha = (cha_mod * 2) + 10
+
+                    try:
+                        fort_prof = data['system']['saves']["fortitude"]["value"] - level - con_mod
+                    except TypeError:
+                        fort_prof = 0
+
+                    try:
+                        reflex_prof = data['system']['saves']["reflex"]["value"] - level - dex_mod
+                    except TypeError:
+                        reflex_prof = 0
+
+                    try:
+                        will_prof = data['system']['saves']["will"]["value"] - level - wis_mod
+                    except TypeError:
+                        will_prof = 0
+
+
+                    stealth_prof = data["system"]["attributes"]["stealth"]['value'] - level - dex_mod
+
+                    resistance = {
+                        "resist": {},
+                        "weak": {},
+                        "immune": {}
+                    }
+                    if "hardness" in data['system']['attributes'].keys():
+                        resistance['resist']['all_damage'] = data['system']['attributes']['hardness']
+                    if "resistances" in data["system"]["attributes"].keys():
+                        for item in data['system']['attributes']['resistances']:
+                            if "exceptions" in item.keys():
+                                item_name = item['type'].lower()
+                                exceptions = item['exceptions']
+                                value = item['value']
+
+                                resistance['resist'][item_name] = {
+                                    "exceptions": exceptions,
+                                    'value': value
+                                }
+                            else:
+                                resistance["resist"][item["type"].lower()] = item["value"]
+
+                            if item["type"] not in resistances:
+                                resistances.append(item["type"])
+                    if "weaknesses" in data["system"]["attributes"].keys():
+                        for item in data['system']['attributes']['weaknesses']:
+                            if "exceptions" in item.keys():
+                                item_name = item['type'].lower()
+                                exceptions = item['exceptions']
+                                value = item['value']
+
+                                resistance['weak'][item_name] = {
+                                    "exceptions": exceptions,
+                                    'value': value
+                                }
+                            else:
+                                resistance["weak"][item["type"].lower()] = item["value"]
+
+                            if item["type"] not in resistances:
+                                resistances.append(item["type"])
+                    if "immunities" in data["system"]["attributes"].keys():
+                        for item in data['system']['attributes']['immunities']:
+                            if "exceptions" in item.keys():
+                                item_name = item['type'].lower()
+                                exceptions = item['exceptions']
+                                value = 1
+
+                                resistance['immune'][item_name] = {
+                                    "exceptions": exceptions,
+                                    'value': value
+                                }
+                            else:
+                                resistance["immune"][item["type"].lower()] = "immune"
+
+                            if item["type"] not in resistances:
+                                resistances.append(item["type"])
+                    try:
+                        async with async_session() as session:
+                            async with session.begin():
+                                new_entry = EPF_NPC(
+                                    name=name,
+                                    max_hp=int(hp),
+                                    type=type,
+                                    level=int(level),
+                                    ac_base=int(ac),
+                                    class_dc=int(level)+10,  # May need to get more granular with this
+                                    str=int(str),
+                                    dex=int(dex),
+                                    con=int(con),
+                                    itl=int(itl),
+                                    wis=int(wis),
+                                    cha=int(cha),
+                                    fort_prof=fort_prof,
+                                    reflex_prof=reflex_prof,
+                                    will_prof=will_prof,
+                                    perception_prof=0,
+                                    arcane_prof=0,
+                                    divine_prof=0,
+                                    occult_prof=0,
+                                    primal_prof=0,
+                                    acrobatics_prof=0,
+                                    arcana_prof=0,
+                                    athletics_prof=0,
+                                    crafting_prof=0,
+                                    deception_prof=0,
+                                    diplomacy_prof=0,
+                                    intimidation_prof=0,
+                                    medicine_prof=0,
+                                    nature_prof=0,
+                                    occultism_prof=0,
+                                    performance_prof=0,
+                                    religion_prof=0,
+                                    society_prof=0,
+                                    stealth_prof=stealth_prof,
+                                    survival_prof=0,
+                                    thievery_prof=0,
+                                    resistance=resistance,
+                                    attacks={},
+                                    spells={}
+
+                                )
+                                session.add(new_entry)
+                                await session.commit()
+                                logging.info(f"{name} written")
+                                return 1
+                    except IntegrityError as e:
+
+                        if os.environ['Overwrite'] == "True":
+                            # print(f"Overwriting {name}")
+                            async with async_session() as session:
+                                npc_result = await session.execute(select(EPF_NPC).where(EPF_NPC.name == name))
+                                npc = npc_result.scalars().one()
+
+                                npc.name = name
+                                npc.max_hp = int(hp)
+                                npc.type = type
+                                npc.level = int(level)
+                                npc.ac_base = int(ac)
+                                npc.class_dc = int(level)+10  # May need to get more granular with this
+                                npc.str = int(str)
+                                npc.dex = int(dex)
+                                npc.con = int(con)
+                                npc.itl = int(itl)
+                                npc.wis = int(wis)
+                                npc.cha = int(cha)
+                                npc.fort_prof = fort_prof
+                                npc.reflex_prof = reflex_prof
+                                npc.will_prof = will_prof
+                                npc.perception_prof = 0
+                                npc.arcane_prof = 0
+                                npc.divine_prof = 0
+                                npc.occult_prof = 0
+                                npc.primal_prof = 0
+                                npc.acrobatics_prof = 0
+                                npc.arcana_prof = 0
+                                npc.athletics_prof = 0
+                                npc.crafting_prof = 0
+                                npc.deception_prof = 0
+                                npc.diplomacy_prof = 0
+                                npc.intimidation_prof = 0
+                                npc.medicine_prof = 0
+                                npc.nature_prof = 0
+                                npc.occultism_prof = 0
+                                npc.performance_prof = 0
+                                npc.religion_prof = 0
+                                npc.society_prof = 0
+                                npc.stealth_prof = stealth_prof
+                                npc.survival_prof = 0
+                                npc.thievery_prof = 0
+                                npc.resistance = resistance
+                                npc.attacks = {}
+                                npc.spells = {}
+
+                                await session.commit()
+                            logging.info(f"{name} overwritten")
+                            return 2
+                        else:
+                            logging.info(f"Excepted {name}")
+                            return 3
+                except Exception as e:
+                    print(data['name'])
+                    print(e)
+
     except Exception as e:
         logging.warning(e)
         return 4
