@@ -18,12 +18,13 @@ async def EPF_import_bestiary(file, async_session):
         with open(f"{file}", encoding='utf8') as f:
             # logging.info(f'{file}')
             data = json.load(f)
+            print(data['name'])
             if "type" in data.keys() and data['type'] == 'npc':
 
                 dc = 0
                 attacks = {}
                 name = data['name']
-                # print(name)
+                print(name)
                 type = data["system"]["details"]["creatureType"]
                 level = data['system']['details']['level']['value']
                 ac = data['system']['attributes']['ac']['value']
@@ -635,6 +636,7 @@ async def EPF_import_bestiary(file, async_session):
                     print(e)
 
     except Exception as e:
+        print(data['name'])
         logging.warning(e)
         return 4
 
