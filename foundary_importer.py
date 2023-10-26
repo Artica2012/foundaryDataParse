@@ -21,6 +21,8 @@ from database_models import Base
 from database_operations import USERNAME, PASSWORD, HOSTNAME, PORT, DATABASE
 from database_operations import get_asyncio_db_engine
 
+engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
+
 DOWNLOAD_URL = "https://github.com/foundryvtt/pf2e/archive/refs/heads/master.zip"
 error_list = []
 
@@ -133,10 +135,10 @@ async def main():
         }
 
         # Download the data and unzip
-        # if await get_data(path):
-        if True:
+        if await get_data(path):
+        # if True:
 
-            engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, port=PORT, db=DATABASE)
+
             Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
@@ -146,29 +148,29 @@ async def main():
                 # print(file)
                 await asyncio.sleep(0)
                 logging.warning(file)
-                # try:
-                if os.path.splitext(file)[1] != '.JSON':
-                    logging.info(f"Its a directory: {file}")
-                    d = f"{data_path}{file}"
-                    for item in os.listdir(d):
-                        await asyncio.sleep(0)
+                try:
+                    if os.path.splitext(file)[1] != '.JSON':
+                        logging.info(f"Its a directory: {file}")
+                        d = f"{data_path}{file}"
+                        for item in os.listdir(d):
+                            await asyncio.sleep(0)
+                            try:
+                                file_path = os.path.join(d, item)
+                                results = await import_data(file_path, results, Session)
+
+                            except Exception as e:
+                                logging.warning(f"{item}, {e}")
+                    else:
                         try:
-                            file_path = os.path.join(d, item)
-                            results = await import_data(file_path, results, Session)
+                            if os.path.splitext(file)[1] == '.json':
+                                file_path = os.path.join('Data', file)
+                                print(file_path)
+                                results = await import_data(file_path, results, Session)
 
                         except Exception as e:
-                            logging.warning(f"{item}, {e}")
-                else:
-                    # try:
-                    if os.path.splitext(file)[1] == '.json':
-                        file_path = os.path.join('Data', file)
-                        print(file_path)
-                        results = await import_data(file_path, results, Session)
-
-                    # except Exception as e:
-                    #     logging.warning(f"{file}, {e}")
-                # except Exception as e:
-                #     logging.warning(f"{file}, {e}")
+                            logging.warning(f"{file}, {e}")
+                except Exception as e:
+                    logging.warning(f"{file}, {e}")
             summary_string = f"Database Update Summary\n"
             for key in results.keys():
                 result_string = (f"{key}\n"
@@ -188,7 +190,7 @@ async def main():
             # print(EPF_Import_Functions.resistances)
             # print("\nDamage Types\n")
             # print(EPF_Import_Functions.damages)
-            await engine.dispose()
+
         else:
             logging.warning("Unsuccessful. Aborting")
 

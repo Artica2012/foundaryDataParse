@@ -18,13 +18,13 @@ async def EPF_import_bestiary(file, async_session):
         with open(f"{file}", encoding='utf8') as f:
             # logging.info(f'{file}')
             data = json.load(f)
-            print(data['name'])
+            # print(data['name'])
             if "type" in data.keys() and data['type'] == 'npc':
 
                 dc = 0
                 attacks = {}
                 name = data['name']
-                print(name)
+                # print(name)
                 type = data["system"]["details"]["creatureType"]
                 level = data['system']['details']['level']['value']
                 ac = data['system']['attributes']['ac']['value']
@@ -634,9 +634,10 @@ async def EPF_import_bestiary(file, async_session):
                 except Exception as e:
                     print(data['name'])
                     print(e)
-
+    except PermissionError:
+        return None
     except Exception as e:
-        print(data['name'])
+        # print(data['name'])
         logging.warning(e)
         return 4
 
@@ -869,7 +870,7 @@ async def EPF_import_spells(file: str, async_session):
                                         type=data["system"]["spellType"]["value"],
                                         save=data["system"]["save"],
                                         traditions=data["system"]["traditions"]["value"],
-                                        school=data["system"]["school"]["value"],
+                                        school="",
                                         damage=damage,
                                         heightening=heightening
 
@@ -892,7 +893,7 @@ async def EPF_import_spells(file: str, async_session):
                                     item.type = data["system"]["spellType"]["value"]
                                     item.save = data["system"]["save"]
                                     item.traditions = data["system"]["traditions"]["value"]
-                                    item.school = data["system"]["school"]["value"]
+                                    item.school = ""
                                     item.damage = damage
                                     item.heightening = heightening
 
@@ -908,6 +909,10 @@ async def EPF_import_spells(file: str, async_session):
                                 return 3
         # print(data['name'])
         excepted_spells.append(data["name"])
+        return None
+    except PermissionError:
+        return None
+    except AttributeError:
         return None
     except Exception as e:
         logging.warning(e)
