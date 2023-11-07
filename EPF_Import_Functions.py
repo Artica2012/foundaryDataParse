@@ -25,7 +25,10 @@ async def EPF_import_bestiary(file, async_session):
                 attacks = {}
                 name = data['name']
                 # print(name)
-                type = data["system"]["details"]["creatureType"]
+                try:
+                    type = data["system"]["traits"]["value"][0]
+                except IndexError:
+                    type = "NPC"
                 level = data['system']['details']['level']['value']
                 ac = data['system']['attributes']['ac']['value']
                 hp = data['system']['attributes']['hp']['max']
@@ -636,6 +639,8 @@ async def EPF_import_bestiary(file, async_session):
                     print(e)
     except PermissionError:
         return None
+    except AttributeError:
+        return None
     except Exception as e:
         # print(data['name'])
         logging.warning(e)
@@ -711,6 +716,10 @@ async def EPF_import_weapon(file: str, async_session):
                     else:
                         logging.info(f"Excepted {data['name']}")
                         return 3
+        return None
+    except PermissionError:
+        return None
+    except AttributeError:
         return None
     except Exception as e:
         logging.warning(e)
@@ -795,6 +804,10 @@ async def EPF_import_equipment(file: str, async_session):
                             else:
                                 logging.info(f"Excepted {data['name']}")
                                 return 3
+            return None
+    except PermissionError:
+        return None
+    except AttributeError:
         return None
     except Exception as e:
         logging.warning(e)

@@ -19,7 +19,13 @@ async def import_bestiary(file: str, async_session):
                 dc = 0
                 name = data['name']
                 level = data['system']['details']['level']['value']
-                creatureType = data['system']['details']['creatureType']
+                try:
+                    creatureType = data['system']['details']['creatureType']
+                except Exception:
+                    try:
+                        creatureType = data["system"]["traits"]["value"][0]
+                    except Exception:
+                        creatureType = ""
                 alignment = data['system']['details']['alignment']['value']
                 ac = data['system']['attributes']['ac']['value']
                 hp = data['system']['attributes']['hp']['max']
@@ -101,6 +107,10 @@ async def import_bestiary(file: str, async_session):
                     else:
                         logging.info(f"Excepted {name}")
                         return 3
+        return None
+    except PermissionError:
+        pass
+    except AttributeError:
         return None
     except Exception:
         # logging.warning(e)
