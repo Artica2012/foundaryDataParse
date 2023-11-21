@@ -26,7 +26,7 @@ async def import_bestiary(file: str, async_session):
                         creatureType = data["system"]["traits"]["value"][0]
                     except Exception:
                         creatureType = ""
-                alignment = data['system']['details']['alignment']['value']
+                alignment = None
                 ac = data['system']['attributes']['ac']['value']
                 hp = data['system']['attributes']['hp']['max']
                 init = data['system']['attributes']['perception']['value']
@@ -112,6 +112,7 @@ async def import_bestiary(file: str, async_session):
         pass
     except AttributeError:
         return None
+
     except Exception:
         # logging.warning(e)
         return 4

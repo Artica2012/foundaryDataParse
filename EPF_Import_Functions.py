@@ -91,7 +91,7 @@ async def EPF_import_bestiary(file, async_session):
                             divine_prof = index['system']['spelldc']['value'] - level - wis_mod
                     elif index["type"] == "spell":
                         # print(index["name"])
-                        if (index["system"]["spellType"]["value"] == "save" or index["system"]["spellType"]["value"] == "attack") and index["system"]["damage"]["value"] != {}:
+                        if index["system"]["damage"] != {}:
                             spell_data = {}
                             spell_data["level"] = index["system"]["level"]["value"]
                             if "heightenedLevel" in index["system"]["location"].keys():
@@ -105,36 +105,41 @@ async def EPF_import_bestiary(file, async_session):
                             spell_data["ability"] = "cha"
                             spell_data["proficiency"] = spell_mod - level - cha_mod
                             spell_data["dc"] = spell_dc - level - cha_mod
-                            spell_data["type"] = index["system"]["spellType"]["value"]
-                            spell_data["save"] = index["system"]["save"]
+                            if index['system']['defense'] == None:
+                                spell_data["type"] = "attack"
+                                spell_data["save"] = None
+                            else:
+                                spell_data['type'] = "save"
+                                spell_data["save"] = index["system"]["defense"]['save']['statistic']
+
                             damage = {}
                             try:
-                                for key in index["system"]["damage"]["value"].keys():
+                                for key in index["system"]["damage"].keys():
                                     damage[key] = {
-                                        "mod": index["system"]["damage"]["value"][key]["applyMod"],
-                                        "value": index["system"]["damage"]["value"][key]["value"],
-                                        "dmg_type": index["system"]["damage"]["value"][key]["type"]["value"]
+                                        "mod": index["system"]["damage"][key]["applyMod"],
+                                        "value": index["system"]["damage"][key],
+                                        "dmg_type": index["system"]["damage"][key]["type"]
                                     }
-                                    if index["system"]["damage"]["value"][key]["type"]["value"] not in damages:
-                                        damages.append(index["system"]["damage"]["value"][key]["type"]["value"])
+                                    if index["system"]["damage"][key]["type"] not in damages:
+                                        damages.append(index["system"]["damage"][key]["type"])
                             except Exception:
                                 try:
                                     damage["value"] = {
-                                        "mod": index["system"]["damage"]["value"]["applyMod"],
-                                        "value": index["system"]["damage"]["value"]["value"],
+                                        "mod": index["system"]["damage"]["applyMod"],
+                                        "value": index["system"]["damage"]["value"],
                                         "dmg_type": index["system"]["damage"]["value"]["type"]["value"]
                                     }
                                     if index["system"]["damage"]["value"][key]["type"]["value"] not in damages:
                                         damages.append(index["system"]["damage"]["value"][key]["type"]["value"])
                                 except Exception:
-                                    for key in index['system']['damage']['value'].keys():
+                                    for key in index['system']['damage'].keys():
                                         damage[key] = {
                                             "mod": False,
-                                            "value": index["system"]["damage"]["value"][key]["value"],
-                                            "dmg_type": index["system"]["damage"]["value"][key]["type"]["value"]
+                                            "value": index["system"]["damage"][key],
+                                            "dmg_type": index["system"]["damage"][key]["type"]
                                         }
-                                        if index["system"]["damage"]["value"][key]["type"]["value"] not in damages:
-                                            damages.append(index["system"]["damage"]["value"][key]["type"]["value"])
+                                        if index["system"]["damage"][key]["type"] not in damages:
+                                            damages.append(index["system"]["damage"][key]["type"])
                             spell_data["damage"] = damage
 
                             if "heightening" in index["system"].keys():
@@ -316,15 +321,24 @@ async def EPF_import_bestiary(file, async_session):
                         if item["type"] not in resistances:
                             resistances.append(item["type"])
 
+                if "hardness" in data['system']['attributes'].keys():
+                    try:
+                        resistance['other ']['hardness'] = data['system']['attributes']['hardness']['value']
+                    except KeyError:
+                        resistance['other'] = {'hardness':data['system']['attributes']['hardness']['value']
+                                               }
+
                 if 'initiative' in data['system']['attributes'].keys():
                     if data['system']['attributes']['initiative']['statistic'] != "perception":
                         init_skill = data['system']['attributes']['initiative']['statistic']
-                        print(f"{name} - Init Skill: {init_skill}")
+                        # print(f"{name} - Init Skill: {init_skill}")
                         try:
                             resistance['other']['init-skill'] = init_skill
                         except KeyError:
                             resistance['other'] = {}
                             resistance['other']['init-skill'] = init_skill
+
+
 
 
 
@@ -482,7 +496,7 @@ async def EPF_import_bestiary(file, async_session):
                         "immune": {}
                     }
                     if "hardness" in data['system']['attributes'].keys():
-                        resistance['resist']['all_damage'] = data['system']['attributes']['hardness']
+                        resistance['resist']['hardness'] = data['system']['attributes']['hardness']
                     if "resistances" in data["system"]["attributes"].keys():
                         for item in data['system']['attributes']['resistances']:
                             if "exceptions" in item.keys():
@@ -821,32 +835,39 @@ async def EPF_import_spells(file: str, async_session):
             data = json.load(f)
             if "type" in data.keys() and data['type'] == 'spell':
                 # print(data['name'])
-                if data["system"]["spellType"]["value"] == "attack" or data["system"]["spellType"]["value"] == "save":
+                if data["system"]["damage"] != {}:
+                    if data['system']['defense'] is None:
+                        spell_type = "attack"
+                        save = None
+                    else:
+                        spell_type = "save"
+                        save = data['system']['defense']['save']['statistic']
+
                     # print(data['system']['spellType']["value"])
-                    if len(data["system"]["damage"]["value"].keys()) == 0:
+                    if len(data["system"]["damage"].keys()) == 0:
                         return 3
                     else:
                         damage = {}
                         try:
-                            for key in data["system"]["damage"]["value"].keys():
+                            for key in data["system"]["damage"].keys():
                                 damage[key] = {
-                                    "mod": data["system"]["damage"]["value"][key]["applyMod"],
-                                    "value": data["system"]["damage"]["value"][key]["value"],
-                                    "dmg_type": data["system"]["damage"]["value"][key]["type"]["value"]
+                                    "mod": data["system"]["damage"][key]["applyMod"],
+                                    "value": data["system"]["damage"][key]["formula"],
+                                    "dmg_type": data["system"]["damage"][key]["type"]
                                 }
                         except Exception:
                             try:
                                 damage["value"] = {
-                                    "mod": data["system"]["damage"]["value"]["applyMod"],
-                                    "value": data["system"]["damage"]["value"]["value"],
-                                    "dmg_type": data["system"]["damage"]["value"]["type"]["value"]
+                                    "mod": data["system"]["damage"]["applyMod"],
+                                    "value": data["system"]["damage"]["formula"],
+                                    "dmg_type": data["system"]["damage"]["type"]
                                 }
                             except Exception:
-                                for key in data['system']['damage']['value'].keys():
+                                for key in data['system']['damage'].keys():
                                     damage[key] = {
                                         "mod": False,
-                                        "value": data["system"]["damage"]["value"][key]["value"],
-                                        "dmg_type": data["system"]["damage"]["value"][key]["type"]["value"]
+                                        "value": data["system"]["damage"][key]["formula"],
+                                        "dmg_type": data["system"]["damage"][key]["type"]
                                     }
                         if "heightening" in data["system"].keys():
                             try:
@@ -874,15 +895,16 @@ async def EPF_import_spells(file: str, async_session):
                                 "damage": ""
                             }
 
+
                         try:
                             async with async_session() as session:
                                 async with session.begin():
                                     new_entry = EPF_Spells(
                                         name=data["name"],
                                         level=data["system"]["level"]["value"],
-                                        type=data["system"]["spellType"]["value"],
-                                        save=data["system"]["save"],
-                                        traditions=data["system"]["traditions"]["value"],
+                                        type=spell_type,
+                                        save=save,
+                                        traditions=data["system"]['traits']["traditions"],
                                         school="",
                                         damage=damage,
                                         heightening=heightening
@@ -903,9 +925,9 @@ async def EPF_import_spells(file: str, async_session):
 
                                     item.name = data["name"]
                                     item.level = data["system"]["level"]["value"]
-                                    item.type = data["system"]["spellType"]["value"]
-                                    item.save = data["system"]["save"]
-                                    item.traditions = data["system"]["traditions"]["value"]
+                                    item.type = spell_type
+                                    item.save = save
+                                    item.traditions = data["system"]['traits']["traditions"]
                                     item.school = ""
                                     item.damage = damage
                                     item.heightening = heightening
