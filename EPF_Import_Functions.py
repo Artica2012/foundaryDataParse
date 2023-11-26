@@ -7,7 +7,9 @@ from math import ceil
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+import over_rides
 from database_models import EPF_NPC, EPF_Weapon, EPF_Equipment, EPF_Spells, excepted_spells
+from over_rides import overrides
 
 resistances = []
 damages = []
@@ -746,7 +748,40 @@ async def EPF_import_equipment(file: str, async_session):
             # logging.info(f'{file}')
             data = json.load(f)
             if "type" in data.keys() and data['type'] == 'equipment':
-                if 'rules' in data['system'].keys():
+
+                if data['name'] in overrides.keys():
+                    # print("OVERRIDE")
+                    try:
+                        async with async_session() as session:
+                            async with session.begin():
+                                new_entry = EPF_Equipment(
+                                    name=data["name"],
+                                    level=overrides[data['name']]['level'],
+                                    data=overrides[data['name']]['rules']
+                                )
+                                session.add(new_entry)
+                                await session.commit()
+                                logging.info(f"{data['name']} written")
+                                return 1
+                    except IntegrityError as e:
+                        if os.environ['Overwrite'] == "True":
+                            async with async_session() as session:
+                                item_result = await session.execute(
+                                    select(EPF_Equipment).where(EPF_Equipment.name == data['name']))
+                                item = item_result.scalars().one()
+
+                                item.name = data["name"]
+                                item.level = overrides[data['name']]['level']
+                                item.data = overrides[data['name']]['rules']
+
+                                await session.commit()
+                            logging.info(f"{data['name']} overwritten")
+                            return 2
+                        else:
+                            logging.info(f"Excepted {data['name']}")
+                            return 3
+
+                elif 'rules' in data['system'].keys():
                     if len(data['system']['rules']) > 0 and data['system']['rules'][0]['key'] == "FlatModifier":
                         # print(data['name'])
                         rules = {}
