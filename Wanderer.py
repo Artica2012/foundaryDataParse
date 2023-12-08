@@ -68,7 +68,7 @@ class Wanderer:
 
     async def lookup(self, category, query=None, id=None, ):
         self.category = category
-        print(category, query, id)
+        # print(category, query, id)
 
         if id is None and query is not None:
             search_string = f"?name={query}"
@@ -97,8 +97,8 @@ class Wanderer:
         output = {}
         try:
             for key in data.keys():
-                print(key)
-                print(data[key])
+                # print(key)
+                # print(data[key])
 
                 try:
                     match self.category:
@@ -112,7 +112,7 @@ class Wanderer:
                             output = self.decode_class(data[key])
                         case "ancestry":
                             output = self.decode_ancestry(data[key])
-                    print(output)
+                    # print(output)
                     await self.write(output)
 
 
@@ -120,7 +120,7 @@ class Wanderer:
                     print("\n")
         except AttributeError:
             for x in data:
-                print(x)
+                # print(x)
                 match self.category:
                     case "archetype":
                         output = self.decode_archetype(x)
@@ -307,18 +307,21 @@ class Wanderer:
                     )
                     session.add(new_entry)
                     await session.commit()
-                    print(output['name'])
+                    # print(output['name'])
         except IntegrityError as e:
-            if os.environ['Overwrite'] == "True":
-                # print("Overwrite")
-                async with async_session() as session:
-                    item_result = await session.execute(
-                        select(PF2_Lookup).where(PF2_Lookup.name == output['name']))
-                    item = item_result.scalars().one()
+            try:
+                if os.environ['Overwrite'] == "True":
+                    # print("Overwrite")
+                    async with async_session() as session:
+                        item_result = await session.execute(
+                            select(PF2_Lookup).where(PF2_Lookup.name == output['name']))
+                        item = item_result.scalars().one()
 
-                    item.name = output['name']
-                    item.endpoint = output['type']
-                    item.data = output
+                        item.name = output['name']
+                        item.endpoint = output['type']
+                        item.data = output
 
-                    await session.commit()
-                    print(output['name'])
+                        await session.commit()
+                        # print(output['name'])
+            except Exception as e:
+                logging.error(e)
