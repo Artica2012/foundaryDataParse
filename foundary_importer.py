@@ -12,6 +12,7 @@ from zipfile import ZipFile
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
+from Wanderer import wander
 
 import EPF_Import_Functions
 import database_models
@@ -25,8 +26,6 @@ engine = get_asyncio_db_engine(user=USERNAME, password=PASSWORD, host=HOSTNAME, 
 
 DOWNLOAD_URL = "https://github.com/foundryvtt/pf2e/archive/refs/heads/master.zip"
 error_list = []
-
-
 
 
 def list_files(startpath):
@@ -77,7 +76,8 @@ async def import_data(file: str, ledger, async_session):
     ledger = await tally_results(await EPF_import_spells(file, async_session), ledger, "EPF_Spells")
     return ledger
 
-async def tally_results(result:int, ledger:dict, category:str):
+
+async def tally_results(result: int, ledger: dict, category: str):
     # print(result)
     if result == 1:
         ledger[category]["written"] += 1
@@ -91,7 +91,8 @@ async def tally_results(result:int, ledger:dict, category:str):
 
     return ledger
 
-async def main():
+
+async def foundary_import():
     logging.basicConfig(level=logging.WARNING)
     logging.warning("Script Started")
     repeat = True
@@ -99,101 +100,105 @@ async def main():
     logging.warning(path)
     data_path = f"{path}pf2e-master/packs/"
     logging.warning(data_path)
-    while repeat:
-        results = {
-            "PF2_NPCs": {
-                "written": 0,
-                "overwritten": 0,
-                "excepted": 0,
-                "error": 0
-            },
-            "EPF_NPCs": {
-                "written": 0,
-                "overwritten": 0,
-                "excepted": 0,
-                "error": 0
-            },
-            "EPF_Weapon": {
-                "written": 0,
-                "overwritten": 0,
-                "excepted": 0,
-                "error": 0
-            },
-            "EPF_Equipment": {
-                "written": 0,
-                "overwritten": 0,
-                "excepted": 0,
-                "error": 0
-            },
-            "EPF_Spells": {
-                "written": 0,
-                "overwritten": 0,
-                "excepted": 0,
-                "error": 0
-            }
-
+    # while repeat:
+    results = {
+        "PF2_NPCs": {
+            "written": 0,
+            "overwritten": 0,
+            "excepted": 0,
+            "error": 0
+        },
+        "EPF_NPCs": {
+            "written": 0,
+            "overwritten": 0,
+            "excepted": 0,
+            "error": 0
+        },
+        "EPF_Weapon": {
+            "written": 0,
+            "overwritten": 0,
+            "excepted": 0,
+            "error": 0
+        },
+        "EPF_Equipment": {
+            "written": 0,
+            "overwritten": 0,
+            "excepted": 0,
+            "error": 0
+        },
+        "EPF_Spells": {
+            "written": 0,
+            "overwritten": 0,
+            "excepted": 0,
+            "error": 0
         }
 
-        # Download the data and unzip
-        if await get_data(path):
+    }
+
+    # Download the data and unzip
+    if await get_data(path):
         # if True:
 
+        Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        # list_files(data_path)
 
-            Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            # list_files(data_path)
-
-            for file in os.listdir(data_path):
-                # print(file)
-                await asyncio.sleep(0)
-                logging.warning(file)
-                try:
-                    if os.path.splitext(file)[1] != '.JSON':
-                        logging.info(f"Its a directory: {file}")
-                        d = f"{data_path}{file}"
-                        for item in os.listdir(d):
-                            await asyncio.sleep(0)
-                            try:
-                                file_path = os.path.join(d, item)
-                                results = await import_data(file_path, results, Session)
-
-                            except Exception as e:
-                                logging.warning(f"{item}, {e}")
-                    else:
+        for file in os.listdir(data_path):
+            # print(file)
+            await asyncio.sleep(0)
+            logging.warning(file)
+            try:
+                if os.path.splitext(file)[1] != '.JSON':
+                    logging.info(f"Its a directory: {file}")
+                    d = f"{data_path}{file}"
+                    for item in os.listdir(d):
+                        await asyncio.sleep(0)
                         try:
-                            if os.path.splitext(file)[1] == '.json':
-                                file_path = os.path.join('Data', file)
-                                print(file_path)
-                                results = await import_data(file_path, results, Session)
+                            file_path = os.path.join(d, item)
+                            results = await import_data(file_path, results, Session)
 
                         except Exception as e:
-                            logging.warning(f"{file}, {e}")
-                except Exception as e:
-                    logging.warning(f"{file}, {e}")
-            summary_string = f"Database Update Summary\n"
-            for key in results.keys():
-                result_string = (f"{key}\n"
-                                  f"  Written: {results[key]['written']}"
-                                  f"  Overwritten: {results[key]['overwritten']}"
-                                  f"  Excepted: {results[key]['excepted']}"
-                                  f"  Error: {results[key]['error']}\n")
-                summary_string = summary_string + result_string
+                            logging.warning(f"{item}, {e}")
+                else:
+                    try:
+                        if os.path.splitext(file)[1] == '.json':
+                            file_path = os.path.join('Data', file)
+                            print(file_path)
+                            results = await import_data(file_path, results, Session)
 
-            for item in error_list:
-                summary_string = summary_string + f"\n   {item}"
-            logging.warning(summary_string)
-            # await delete_data(f"{path}/pf2e-master")
-            logging.warning("Completed Successfully")
-            # print(database_models.excepted_spells)
-            # print("\nResistances\n")
-            # print(EPF_Import_Functions.resistances)
-            # print("\nDamage Types\n")
-            # print(EPF_Import_Functions.damages)
+                    except Exception as e:
+                        logging.warning(f"{file}, {e}")
+            except Exception as e:
+                logging.warning(f"{file}, {e}")
+        summary_string = f"Database Update Summary\n"
+        for key in results.keys():
+            result_string = (f"{key}\n"
+                             f"  Written: {results[key]['written']}"
+                             f"  Overwritten: {results[key]['overwritten']}"
+                             f"  Excepted: {results[key]['excepted']}"
+                             f"  Error: {results[key]['error']}\n")
+            summary_string = summary_string + result_string
 
-        else:
-            logging.warning("Unsuccessful. Aborting")
+        for item in error_list:
+            summary_string = summary_string + f"\n   {item}"
+        logging.warning(summary_string)
+        # await delete_data(f"{path}/pf2e-master")
+        logging.warning("Completed Successfully")
+        # print(database_models.excepted_spells)
+        # print("\nResistances\n")
+        # print(EPF_Import_Functions.resistances)
+        # print("\nDamage Types\n")
+        # print(EPF_Import_Functions.damages)
 
+    else:
+        logging.warning("Unsuccessful. Aborting")
+
+
+async def main():
+    while True:
+        await foundary_import()
+        await wander()
         await asyncio.sleep(86400)
 
 

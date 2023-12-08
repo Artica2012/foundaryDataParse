@@ -129,7 +129,13 @@ class EPF_Spells(Base):
     damage = Column(JSON())
     heightening = Column(JSON())
 
-
+class PF2_Lookup(Base):
+    __tablename__ = "pf2_lookup_data"
+    # Columns
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    name = Column(String(), unique=True)
+    endpoint = Column(String())
+    data = Column(JSON())
 
 
 
