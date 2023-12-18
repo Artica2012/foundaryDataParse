@@ -664,24 +664,34 @@ async def EPF_import_bestiary(file, async_session):
 
 
 async def EPF_import_weapon(file: str, async_session):
+    rune_interpeters ={
+        0: "",
+        1: "striking",
+        2: "greaterStriking",
+        3: "majorStriking"
+    }
     try:
         with open(f"{file}", encoding='utf8') as f:
             # logging.info(f'{file}')
             data = json.load(f)
             if "type" in data.keys() and data['type'] == 'weapon':
                 # print(data['name'])
-                if data["system"]["potencyRune"]["value"] is None:
+                if data["system"]["runes"]["potency"] is None:
                     potency = 0
                 else:
-                    potency = data["system"]["potencyRune"]["value"]
-                runes = ""
-                for x in range(1, 6):
-                    try:
-                        if data["system"][f"propertyRune{x}"] is not None:
-                            runes += f"{data['system'][f'propertyRune{x}'],}"
-                    except KeyError:
-                        pass
+                    potency = data["system"]["runes"]["potency"]
+                # print(potency)
 
+                try:
+                    runes = " ,".join(data['system']['runes']['property'])
+                except Exception:
+                    runes = ""
+                # print(runes)
+
+                striking = rune_interpeters[data['system']['runes']['striking']]
+                # print(striking)
+
+                print(f"{data['name']}, {potency}, {striking}, [{runes}]: \n")
                 # Write to the database
                 try:
                     async with async_session() as session:
@@ -697,7 +707,7 @@ async def EPF_import_weapon(file: str, async_session):
                                 group=data["system"]["group"],
                                 range=data["system"]["range"],
                                 potency_rune=potency,
-                                striking_rune=data["system"]["strikingRune"]["value"],
+                                striking_rune=striking,
                                 runes=runes,
                                 traits=data["system"]["traits"]["value"],
                             )
@@ -722,7 +732,7 @@ async def EPF_import_weapon(file: str, async_session):
                             item.group = data["system"]["group"]
                             item.range = data["system"]["range"]
                             item.potency_rune = potency
-                            item.striking_rune = data["system"]["strikingRune"]["value"]
+                            item.striking_rune = striking
                             item.runes = runes
                             item.traits = data["system"]["traits"]["value"]
 

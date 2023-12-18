@@ -137,7 +137,7 @@ async def foundary_import():
 
     # Download the data and unzip
     if await get_data(path):
-        # if True:
+    # if True:
 
         Session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
         async with engine.begin() as conn:

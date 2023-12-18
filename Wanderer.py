@@ -33,7 +33,7 @@ async def wander():
     Wander = Wanderer(CLIENT_ID, API_KEY)
     for key in endpoints.keys():
         try:
-            print(key)
+            # logging.error(key)
             await Wander.wander(endpoints[key], query=None)
         except Exception:
             logging.error(f"ERROR: {key}")
@@ -82,7 +82,7 @@ class Wanderer:
                 "Authorization": self.api_key
             }
             async with session.get(f"{GET_URL}{category}{search_string}", headers=headers, ssl=False) as response:
-                print(response.status)
+                # print(response.status)
                 # print(response)
                 if response.status == 200:
                     data:dict = await response.json()
