@@ -691,7 +691,7 @@ async def EPF_import_weapon(file: str, async_session):
                 striking = rune_interpeters[data['system']['runes']['striking']]
                 # print(striking)
 
-                print(f"{data['name']}, {potency}, {striking}, [{runes}]: \n")
+                # print(f"{data['name']}, {potency}, {striking}, [{runes}]: \n")
                 # Write to the database
                 try:
                     async with async_session() as session:
