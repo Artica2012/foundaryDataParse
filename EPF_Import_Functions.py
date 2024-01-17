@@ -34,7 +34,7 @@ async def EPF_import_bestiary(file, async_session):
                 level = data['system']['details']['level']['value']
                 ac = data['system']['attributes']['ac']['value']
                 hp = data['system']['attributes']['hp']['max']
-                init = data['system']['attributes']['perception']['value']
+                init = data['system']['perception']['mod']
 
                 str_mod = data["system"]['abilities']["str"]["mod"]
                 str = (str_mod * 2) + 10
@@ -52,7 +52,7 @@ async def EPF_import_bestiary(file, async_session):
                 fort_prof = data['system']['saves']["fortitude"]["value"] - level - con_mod
                 reflex_prof = data['system']['saves']["reflex"]["value"] - level - dex_mod
                 will_prof = data['system']['saves']["will"]["value"] - level - wis_mod
-                perception_prof = data['system']['attributes']['perception']["value"] - level - wis_mod
+                perception_prof = data['system']['perception']['mod'] - level - wis_mod
 
                 arcane_prof = 0
                 divine_prof = 0

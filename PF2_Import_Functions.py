@@ -29,7 +29,7 @@ async def import_bestiary(file: str, async_session):
                 alignment = None
                 ac = data['system']['attributes']['ac']['value']
                 hp = data['system']['attributes']['hp']['max']
-                init = data['system']['attributes']['perception']['value']
+                init = data['system']['perception']['mod']
                 init_string = f"1d20+{init}"
                 fort = data['system']['saves']['fortitude']['value']
                 reflex = data['system']['saves']['reflex']['value']
